@@ -16,7 +16,7 @@ from typing import Optional, Dict, Any, List
 import logging
 from datetime import datetime
 
-from .config import config
+from config import config
 
 # ==============================================================================
 # --- Logging Configuration ---
