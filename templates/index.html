@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Global and National BAR Leaderboards{% endblock %}
+
+{% block content %}
+        <h1>Global and National BAR Leaderboards</h1>
+        <div class="header-status">Discover the elite Beyond All Reason champions! Our comprehensive player rankings showcase individual mastery across all game modes and nations. Whether you're hunting for the world's best duelist or tracking your country's top performers, find your place among the legends. Every match matters, every victory counts. Rise through the ranks and claim your spot in BAR history!</div>
+        <div class="last-updated" id="status-header">Loading status...</div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label for="leaderboardSelector">Leaderboard</label>
+                <select id="leaderboardSelector"><option>Loading...</option></select>
+            </div>
+            <div class="control-group">
+                <label>Game Mode</label>
+                <div class="game-mode-selector">
+                    <button class="active" data-mode="Large Team">Large Team</button>
+                    <button data-mode="Small Team">Small Team</button>
+                    <button data-mode="Duel">Duel</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls" style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 2rem;">
+            <div class="control-group">
+                <label for="searchInput">Find a Player</label>
+                <input type="search" id="searchInput" placeholder="Start typing a name...">
+            </div>
+        </div>
+
+        <div id="searchResults"></div>
+
+        <h2 id="leaderboardTitle">Top Players</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:10%; text-align: center;">Rank</th>
+                    <th style="width:60%;">Player Name</th>
+                    <th style="width:30%;">Leaderboard Rating</th>
+                </tr>
+            </thead>
+            <tbody id="leaderboardBody"></tbody>
+        </table>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/js/player-leaderboard.js"></script>
+{% endblock %}

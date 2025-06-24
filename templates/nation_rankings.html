@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}BAR Nation Rankings (Last 7 Days){% endblock %}
+
+{% block content %}
+        <h1>BAR Nation Rankings (Last 7 Days)</h1>
+        <div class="header-status">Who reigns supreme in Beyond All Reason? Our weekly Nation Rankings reveal the global power balance, updated based on the performance of each country's elite players over the last 7 days. See where your nation ranks in the weekly global BAR championship and, more importantly, how your recent performance is shaping its destiny. Fight for your flag!</div>
+        <div class="last-updated" id="lastUpdated">Last updated: Loading...</div>
+
+        <div class="controls">
+            <div class="control-group">
+                <label>Game Mode</label>
+                <div class="game-mode-selector">
+                    <button class="active" data-mode="Large Team">Large Team</button>
+                    <button data-mode="Small Team">Small Team</button>
+                    <button data-mode="Duel">Duel</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls" style="margin-top: 2rem; border-top: 1px solid var(--border-color); padding-top: 2rem;">
+            <div class="control-group">
+                <label for="playerSearchInput">Find a Player</label>
+                <input type="search" id="playerSearchInput" placeholder="Search for a player across all nations...">
+            </div>
+        </div>
+
+        <div id="searchResults"></div>
+        
+        <h2 id="rankingTitle">Nation Rankings</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:10%; text-align: center;">Rank</th>
+                    <th style="width:50%;">Nation</th>
+                    <th style="width:25%;">Weekly Score</th>
+                    <th style="width:15%; text-align: center;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="rankingBody"></tbody>
+        </table>
+
+        <div class="info-box">
+            <div class="info-header">
+                <h3>Scoring System - Why This Matters</h3>
+                <p><strong>Formula:</strong> (Wins - Losses) / (Total Games + Confidence Factor) × 10000</p>
+                <p><strong>Key Benefits:</strong></p>
+                <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+                    <li><strong>No "lucky streaks"</strong> - Small sample sizes are automatically discounted</li>
+                    <li><strong>Rewards consistency</strong> - Active nations with sustained performance rise to the top</li>
+                    <li><strong>Fair competition</strong> - Prevents statistical gaming by requiring meaningful participation</li>
+                    <li><strong>Dynamic scaling</strong> - Confidence Factor adapts to each game mode's activity level</li>
+                </ul>
+                  </div>
+            
+            <div class="info-toggle">
+                <button class="toggle-explanation" onclick="toggleExplanation()">
+                    <span class="toggle-icon">▶</span>
+                    <span class="toggle-text">Show detailed explanation</span>
+                </button>
+            </div>
+            
+            <div class="detailed-explanation" id="detailedExplanation" style="display: none;">
+                <div class="explanation-section">
+                    <h4>How the Confidence Factor Works</h4>
+                    <p>The Confidence Factor (CF) is calculated for each game mode based on average activity:</p>
+                    <div class="formula-box">
+                        <strong>k = Average Games per Nation ÷ 2</strong><br>
+                        <strong>Confidence Factor = 2k</strong>
+                    </div>
+                    <p><strong>Real-World Example:</strong> If Large Team mode averages 120 games per nation, then k = 60 and CF = 120.</p>
+                </div>
+                
+                <div class="explanation-section">
+                    <h4>Small vs Large Country Examples</h4>
+                    <p>Both countries have identical 67% win rates, but different game counts. CF = 120:</p>
+                    
+                    <div class="comparison-box">
+                        <div class="country-example">
+                            <h5>Small Country (Monaco)</h5>
+                            <p><strong>Performance:</strong> 4 wins, 2 losses (6 games total)</p>
+                            <div class="calculation-example">
+                                <strong>Formula:</strong> (4-2) ÷ (6+120) × 10000<br>
+                                <strong>Score:</strong> 2 ÷ 126 × 10000 = <span class="score-highlight">159</span>
+                            </div>
+                            <p><em>CF heavily dampens the score despite good win rate</em></p>
+                        </div>
+                        
+                        <div class="country-example">
+                            <h5>Large Country (USA)</h5>
+                            <p><strong>Performance:</strong> 200 wins, 100 losses (300 games total)</p>
+                            <div class="calculation-example">
+                                <strong>Formula:</strong> (200-100) ÷ (300+120) × 10000<br>
+                                <strong>Score:</strong> 100 ÷ 420 × 10000 = <span class="score-highlight">2381</span>
+                            </div>
+                            <p><em>CF has minimal impact, true performance shines through</em></p>
+                        </div>
+                    </div>
+                    
+                    <p><strong>Key Insight:</strong> Both nations have identical 67% win rates, but the USA's score is 15x higher because we can trust their performance more with 300 games vs Monaco's 6 games.</p>
+                </div>
+                
+                <div class="explanation-section">
+                    <h4>Example Calculation</h4>
+                    <p>Nation with 10 wins, 5 losses, 15 total games. CF = 30:</p>
+                    <div class="calculation-example">
+                        <strong>Without CF:</strong> (10-5)/15 × 10000 = <span class="score-highlight">3333</span><br>
+                        <strong>With CF:</strong> (10-5)/(15+30) × 10000 = <span class="score-highlight">1111</span>
+                    </div>
+                    <p>The CF moderates the score, making it more reliable and fair.</p>
+                </div>
+                
+                <div class="explanation-section">
+                    <h4>Minimum Activity Filter</h4>
+                    <p>Nations must play at least <strong>k/4 games</strong> to appear on the leaderboard. This filters out "one-hit wonders" while keeping the system inclusive.</p>
+                </div>
+            </div>
+            
+            <div class="info-footer">
+                <p><em><strong>Pro Tip:</strong> Click on any nation to see their top contributors and discover the players driving their success! Use "View Details" to dive deep into the statistical breakdown.</em></p>
+            </div>
+        </div>
+{% endblock %}
+
+{% block scripts %}
+    <script src="/static/js/nation-rankings.js"></script>
+{% endblock %}

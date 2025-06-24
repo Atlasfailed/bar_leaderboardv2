@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}BAR Leaderboards{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/styles.css">
+    {% block head %}{% endblock %}
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+    <!-- Navigation Menu -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">
+                <img src="/static/images/logo.png" alt="AtlasFailed Logo" class="nav-logo">
+                BAR Leaderboards
+            </a>
+            <button class="nav-toggle">☰</button>
+            <ul class="nav-menu">
+                <li><a href="/" class="nav-link {% if request.endpoint == 'index' %}active{% endif %}">Player Rankings</a></li>
+                <li><a href="/nation-rankings" class="nav-link {% if request.endpoint == 'nation_rankings' %}active{% endif %}">Nation Rankings</a></li>
+                <li><a href="/team-rankings" class="nav-link {% if request.endpoint == 'team_rankings_page' %}active{% endif %}">Team Rankings</a></li>
+                <li><a href="/efficiency-analysis" class="nav-link {% if request.endpoint == 'efficiency_analysis_page' %}active{% endif %}">Efficiency Analysis</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+        
+        <img src="/static/images/logo.png" alt="AtlasFailed Logo" class="footer-logo">
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/common.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

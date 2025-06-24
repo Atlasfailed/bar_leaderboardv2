@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}BAR Energy Efficiency Analysis{% endblock %}
+
+{% block extra_head %}
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+{% endblock %}
+
+{% block content %}
+
+
+
+        <div class="interpretation-note">
+            <h5>Reading the Graphs:</h5>
+            <div class="interpretation-grid">
+                <div class="interpretation-item">
+                    <strong>Higher = Better:</strong> Both metrics favor higher values
+                </div>
+                <div class="interpretation-item">
+                    <strong>Sloped Lines:</strong> Wind/tidal efficiency varies with environmental speed
+                </div>
+                <div class="interpretation-item">
+                    <strong>Flat Lines:</strong> Fixed generators (fusion, solar, geo) have constant efficiency
+                </div>
+                <div class="interpretation-item">
+                    <strong>Trade-offs:</strong> Best metal efficiency ≠ best time efficiency
+                </div>
+            </div>
+        </div>   
+<!-- Graphs Section -->
+<div class="graphs-container">
+    <!-- ARM Faction Graphs -->
+    <div class="faction-section">
+        <h2>ARM (Armada) Energy Efficiency</h2>
+        <div class="graph-column">
+            <div class="graph-item">
+                <h3>Energy per 100 Metal vs Wind/Tidal Speed</h3>
+                <div id="arm-metal-efficiency" class="plotly-graph"></div>
+            </div>
+            <div class="graph-item">
+                <h3>Energy per 1000 Build Time vs Wind/Tidal Speed</h3>
+                <div id="arm-time-efficiency" class="plotly-graph"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- COR Faction Graphs -->
+    <div class="faction-section">
+        <h2>COR (Cortex) Energy Efficiency</h2>
+        <div class="graph-column">
+            <div class="graph-item">
+                <h3>Energy per 100 Metal vs Wind/Tidal Speed</h3>
+                <div id="cor-metal-efficiency" class="plotly-graph"></div>
+            </div>
+            <div class="graph-item">
+                <h3>Energy per 1000 Build Time vs Wind/Tidal Speed</h3>
+                <div id="cor-time-efficiency" class="plotly-graph"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Shared Legend -->
+<div class="shared-legend">
+    <h3>Unit Legend</h3>
+    <div id="shared-legend-content">
+        <div class="legend-section">
+            <div id="unified-legend-items"></div>
+        </div>
+    </div>
+</div>
+
+<h1>Energy Efficiency Analysis</h1>
+
+<!-- Formula Explanation Section -->
+<div class="header-status">
+    <div class="formula-explanation">
+        <h3>How Efficiency is Calculated</h3>
+        <div class="formula-section">
+            <div class="formula-box">
+                <div class="formula-item">
+                    <strong>Metal Efficiency:</strong>
+                    <code>Energy Production ÷ (Metal Cost + Energy Cost ÷ 70) × 100</code>
+                </div>
+                <div class="formula-item">
+                    <strong>Time Efficiency:</strong>
+                    <code>Energy Production ÷ Build Time × 1000</code>
+                </div>
+            </div>
+        </div>
+        
+
+        </div>
+        
+        <div class="formula-limitations">
+            <h5>What These Formulas Don't Include:</h5>
+            <div class="limitations-grid">
+                <div class="limitation-item">
+                    <strong>Build Space:</strong><br>
+                    <small>Wind farms need vastly more area than fusion reactors</small>
+                </div>
+                <div class="limitation-item">
+                    <strong>Reliability:</strong><br>
+                    <small>Wind requires energy storage</small>
+                </div>
+                <div class="limitation-item">
+                    <strong>Vulnerability:</strong><br>
+                    <small>Spread wind farms vs compact fusion placement</small>
+                </div>
+                <div class="limitation-item">
+                    <strong>Build Complexity:</strong><br>
+                    <small>APM requirements and micro-management costs</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="/static/js/efficiency_analysis.js"></script>
+{% endblock %}
