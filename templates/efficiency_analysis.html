@@ -8,112 +8,164 @@
 
 {% block content %}
 
+<h1>Energy Efficiency Analysis</h1>
 
-
-        <div class="interpretation-note">
-            <h5>Reading the Graphs:</h5>
-            <div class="interpretation-grid">
-                <div class="interpretation-item">
-                    <strong>Higher = Better:</strong> Both metrics favor higher values
+<!-- Main Information Cards -->
+<div class="info-cards-container">
+    <!-- How to Read Card -->
+    <div class="info-card">
+        <div class="card-header">
+            <h3>📊 How to Read These Efficiency Graphs</h3>
+        </div>
+        <div class="card-content">
+            <div class="step-by-step-guide">
+                <div class="step-item">
+                    <span class="step-number">1</span>
+                    <div class="step-content">
+                        <strong>Find Your Map's Wind/Tidal Speed:</strong> Look at the horizontal axis (X-axis) and locate your map's wind or tidal speed value.
+                    </div>
                 </div>
-                <div class="interpretation-item">
-                    <strong>Sloped Lines:</strong> Wind/tidal efficiency varies with environmental speed
+                
+                <div class="step-item">
+                    <span class="step-number">2</span>
+                    <div class="step-content">
+                        <strong>Move Up Vertically:</strong> From that wind/tidal speed point, draw an imaginary vertical line upward to see where it intersects with different generator lines.
+                    </div>
                 </div>
-                <div class="interpretation-item">
-                    <strong>Flat Lines:</strong> Fixed generators (fusion, solar, geo) have constant efficiency
+                
+                <div class="step-item">
+                    <span class="step-number">3</span>
+                    <div class="step-content">
+                        <strong>Higher Lines = Better Efficiency:</strong> The generator line that appears highest at your wind/tidal speed is the most efficient choice for that map condition.
+                    </div>
                 </div>
-                <div class="interpretation-item">
-                    <strong>Trade-offs:</strong> Best metal efficiency ≠ best time efficiency
+                
+                <div class="step-item">
+                    <span class="step-number">4</span>
+                    <div class="step-content">
+                        <strong>Compare Both Graphs:</strong> Check both "Metal Efficiency" and "Time Efficiency" as the best choice may differ depending on whether you prioritize resource economy or build speed.
+                    </div>
                 </div>
             </div>
-        </div>   
+            
+            <div class="quick-tips">
+                <div class="tip-item">
+                    <strong>📈 Sloped Lines:</strong> Wind/tidal generators get more efficient with higher environmental speeds
+                </div>
+                <div class="tip-item">
+                    <strong>📏 Flat Lines:</strong> Fixed generators (fusion, solar, geo) have constant efficiency regardless of wind/tidal speed
+                </div>
+                <div class="tip-item">
+                    <strong>⚖️ Trade-offs:</strong> The most metal-efficient generator isn't always the fastest to build
+                </div>
+                <div class="tip-item">
+                    <strong>🎯 Pro Tip:</strong> For windy/high-tidal maps, wind/tidal generators often outperform fixed generators
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Formula Explanation Card -->
+    <div class="info-card">
+        <div class="card-header">
+            <h3>🔬 How Efficiency is Calculated</h3>
+        </div>
+        <div class="card-content">
+            <div class="formula-section">
+                <div class="formula-item">
+                    <strong>Metal Efficiency:</strong>
+                    <code>Energy Production ÷ (Metal Cost + Energy Cost ÷ 70) × 100</code>
+                    <p>Shows how much energy you get per 100 metal invested (including energy costs converted to metal)</p>
+                </div>
+                <div class="formula-item">
+                    <strong>Time Efficiency:</strong>
+                    <code>Energy Production ÷ Build Time × 1000</code>
+                    <p>Shows how much energy you get per 1000 build time units</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Limitations Card -->
+    <div class="info-card">
+        <div class="card-header">
+            <h3>⚠️ Important Considerations</h3>
+        </div>
+        <div class="card-content">
+            <p>These efficiency calculations focus purely on resource and time costs. Real-world decisions should also consider:</p>
+            <div class="limitations-grid">
+                <div class="limitation-item">
+                    <strong>🏗️ Build Space:</strong>
+                    <p>Wind farms need vastly more area than fusion reactors</p>
+                </div>
+                <div class="limitation-item">
+                    <strong>🔋 Reliability:</strong>
+                    <p>Wind generators require energy storage for consistent power</p>
+                </div>
+                <div class="limitation-item">
+                    <strong>🎯 Vulnerability:</strong>
+                    <p>Spread wind farms vs compact fusion placement affects defense</p>
+                </div>
+                <div class="limitation-item">
+                    <strong>⚡ Build Complexity:</strong>
+                    <p>APM requirements and micro-management costs vary significantly</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Graphs Section -->
 <div class="graphs-container">
     <!-- ARM Faction Graphs -->
-    <div class="faction-section">
-        <h2>ARM (Armada) Energy Efficiency</h2>
-        <div class="graph-column">
-            <div class="graph-item">
-                <h3>Energy per 100 Metal vs Wind/Tidal Speed</h3>
-                <div id="arm-metal-efficiency" class="plotly-graph"></div>
-            </div>
-            <div class="graph-item">
-                <h3>Energy per 1000 Build Time vs Wind/Tidal Speed</h3>
-                <div id="arm-time-efficiency" class="plotly-graph"></div>
+    <div class="info-card">
+        <div class="card-header">
+            <h3>ARM (Armada) Energy Efficiency</h3>
+        </div>
+        <div class="card-content">
+            <div class="graph-column">
+                <div class="graph-item">
+                    <h4>Energy per 100 Metal vs Wind/Tidal Speed</h4>
+                    <div id="arm-metal-efficiency" class="plotly-graph"></div>
+                </div>
+                <div class="graph-item">
+                    <h4>Energy per 1000 Build Time vs Wind/Tidal Speed</h4>
+                    <div id="arm-time-efficiency" class="plotly-graph"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- COR Faction Graphs -->
-    <div class="faction-section">
-        <h2>COR (Cortex) Energy Efficiency</h2>
-        <div class="graph-column">
-            <div class="graph-item">
-                <h3>Energy per 100 Metal vs Wind/Tidal Speed</h3>
-                <div id="cor-metal-efficiency" class="plotly-graph"></div>
-            </div>
-            <div class="graph-item">
-                <h3>Energy per 1000 Build Time vs Wind/Tidal Speed</h3>
-                <div id="cor-time-efficiency" class="plotly-graph"></div>
+    <div class="info-card">
+        <div class="card-header">
+            <h3>COR (Cortex) Energy Efficiency</h3>
+        </div>
+        <div class="card-content">
+            <div class="graph-column">
+                <div class="graph-item">
+                    <h4>Energy per 100 Metal vs Wind/Tidal Speed</h4>
+                    <div id="cor-metal-efficiency" class="plotly-graph"></div>
+                </div>
+                <div class="graph-item">
+                    <h4>Energy per 1000 Build Time vs Wind/Tidal Speed</h4>
+                    <div id="cor-time-efficiency" class="plotly-graph"></div>
+                </div>
             </div>
         </div>
     </div>
-</div>
-<!-- Shared Legend -->
-<div class="shared-legend">
-    <h3>Unit Legend</h3>
-    <div id="shared-legend-content">
-        <div class="legend-section">
+
+    <!-- Legend Card -->
+    <div class="info-card">
+        <div class="card-header">
+            <h3>📋 Unit Legend</h3>
+        </div>
+        <div class="card-content">
             <div id="unified-legend-items"></div>
         </div>
     </div>
 </div>
 
-<h1>Energy Efficiency Analysis</h1>
-
-<!-- Formula Explanation Section -->
-<div class="header-status">
-    <div class="formula-explanation">
-        <h3>How Efficiency is Calculated</h3>
-        <div class="formula-section">
-            <div class="formula-box">
-                <div class="formula-item">
-                    <strong>Metal Efficiency:</strong>
-                    <code>Energy Production ÷ (Metal Cost + Energy Cost ÷ 70) × 100</code>
-                </div>
-                <div class="formula-item">
-                    <strong>Time Efficiency:</strong>
-                    <code>Energy Production ÷ Build Time × 1000</code>
-                </div>
-            </div>
-        </div>
-        
-
-        </div>
-        
-        <div class="formula-limitations">
-            <h5>What These Formulas Don't Include:</h5>
-            <div class="limitations-grid">
-                <div class="limitation-item">
-                    <strong>Build Space:</strong><br>
-                    <small>Wind farms need vastly more area than fusion reactors</small>
-                </div>
-                <div class="limitation-item">
-                    <strong>Reliability:</strong><br>
-                    <small>Wind requires energy storage</small>
-                </div>
-                <div class="limitation-item">
-                    <strong>Vulnerability:</strong><br>
-                    <small>Spread wind farms vs compact fusion placement</small>
-                </div>
-                <div class="limitation-item">
-                    <strong>Build Complexity:</strong><br>
-                    <small>APM requirements and micro-management costs</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 {% endblock %}
 
 {% block scripts %}

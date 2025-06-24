@@ -648,19 +648,7 @@ td.rank {
     line-height: 1.4;
 }
 
-.interpretation-note {
-    background-color: var(--background-color);
-    border-left: 4px solid var(--positive-score);
-    padding: 1rem;
-    margin: 1rem 0;
-    border-radius: 0 4px 4px 0;
-}
 
-.interpretation-note p {
-    margin: 0;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-}
 
 /* Enhanced Formula Explanation Styles */
 .formula-overview {
@@ -789,308 +777,218 @@ td.rank {
     font-weight: 600;
 }
 
-.interpretation-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.75rem;
-    margin-top: 0.5rem;
+/* Unified Info Card System */
+.info-cards-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin: 2rem 0;
 }
 
-.interpretation-item {
-    padding: 0.5rem;
-    background-color: var(--hover-bg);
-    border-radius: 4px;
-    font-size: 0.85rem;
-    line-height: 1.3;
+.info-card {
+    background-color: var(--container-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transition: all 0.2s ease;
 }
 
-.interpretation-item strong {
-    color: var(--accent-color);
-    display: block;
-    margin-bottom: 0.25rem;
+.info-card:hover {
+    border-color: var(--accent-color);
+    box-shadow: 0 4px 16px rgba(88, 166, 255, 0.1);
 }
 
-.formula-limitations {
-    margin-top: 1.5rem;
-    padding: 1rem;
-    background-color: var(--background-color);
-    border: 1px solid var(--warning-color);
-    border-radius: 6px;
+.card-header {
+    background: linear-gradient(135deg, rgba(88, 166, 255, 0.1), rgba(88, 166, 255, 0.05));
+    border-bottom: 1px solid var(--border-color);
+    padding: 1.5rem;
 }
 
-.formula-limitations h5 {
-    margin: 0 0 0.75rem 0;
-    color: var(--warning-color);
-    font-size: 0.9rem;
+.card-header h3 {
+    margin: 0;
+    color: var(--text-primary);
+    font-size: 1.25rem;
     font-weight: 600;
 }
 
-.limitations-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 0.75rem;
-    margin-top: 0.5rem;
+.card-content {
+    padding: 1.5rem;
 }
 
-.limitation-item {
-    padding: 0.5rem;
+/* Step-by-step guide within cards */
+.step-by-step-guide {
+    margin: 0 0 1.5rem 0;
+}
+
+.step-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+    padding: 0.75rem;
     background-color: var(--hover-bg);
-    border-radius: 4px;
-    text-align: center;
+    border-radius: 6px;
+    border-left: 3px solid var(--accent-color);
 }
 
-.limitation-item strong {
-    color: var(--warning-color);
-    font-size: 0.8rem;
+.step-item:last-child {
+    margin-bottom: 0;
+}
+
+.step-number {
+    background-color: var(--accent-color);
+    color: var(--background-color);
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.85rem;
+    margin-right: 0.75rem;
+    flex-shrink: 0;
+}
+
+.step-content {
+    flex: 1;
+    line-height: 1.5;
+}
+
+.step-content strong {
+    color: var(--accent-color);
     display: block;
     margin-bottom: 0.25rem;
 }
 
-.limitation-item small {
-    color: var(--text-secondary);
-    font-size: 0.7rem;
-    line-height: 1.2;
-}
-
-/* Responsive adjustments for formulas */
-@media (max-width: 768px) {
-    .formula-explanation {
-        padding: 1rem;
-    }
-    
-    .formula-section {
-        padding: 0.75rem;
-    }
-    
-    .formula-box code {
-        font-size: 0.85rem;
-        word-break: break-all;
-    }
-    
-    .formula-explanation h3 {
-        font-size: 1.1rem;
-    }
-}
-
-/* Responsive adjustments for enhanced formulas */
-@media (max-width: 768px) {
-    .interpretation-grid,
-    .limitations-grid {
-        grid-template-columns: 1fr;
-    }
-    
-    .formula-breakdown,
-    .metal-equivalent-explanation,
-    .time-efficiency-explanation,
-    .example-calculation {
-        padding: 0.75rem;
-    }
-    
-    .calculation-box {
-        padding: 0.5rem;
-    }
-    
-    .calc-step,
-    .calc-result {
-        font-size: 0.8rem;
-    }
-    
-    .breakdown-list li,
-    .explanation-list li {
-        font-size: 0.8rem;
-    }
-}
-
-/* Analysis Conclusions Styles */
-.analysis-conclusions {
-    background-color: var(--container-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 2rem;
-    margin: 2rem 0;
-}
-
-.analysis-conclusions h3 {
-    color: var(--accent-color);
-    margin: 0 0 1.5rem 0;
-    font-size: 1.4rem;
-    border-bottom: 2px solid var(--accent-color);
-    padding-bottom: 0.5rem;
-}
-
-.conclusion-section {
-    margin: 2rem 0;
-    padding: 1.5rem;
-    background-color: var(--hover-bg);
-    border-radius: 6px;
-    border-left: 4px solid var(--accent-color);
-}
-
-.conclusion-section h4 {
-    color: var(--text-primary);
-    margin: 0 0 1rem 0;
-    font-size: 1.2rem;
-}
-
-.conclusion-section h5 {
-    color: var(--accent-color);
-    margin: 1rem 0 0.5rem 0;
-    font-size: 1rem;
-}
-
-.conclusion-section ul {
-    margin: 0.5rem 0;
-    padding-left: 1.5rem;
-}
-
-.conclusion-section li {
-    margin: 0.5rem 0;
-    color: var(--text-primary);
-}
-
-.strategy-subsection {
-    margin: 1rem 0;
-    padding: 1rem;
-    background-color: var(--background-color);
-    border-radius: 4px;
-}
-
-.takeaway-grid {
+/* Quick tips grid */
+.quick-tips {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin: 1rem 0;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 0.75rem;
 }
 
-.takeaway-item {
+.tip-item {
+    padding: 0.75rem;
     background-color: var(--background-color);
-    padding: 1rem;
     border-radius: 6px;
     border: 1px solid var(--border-color);
-}
-
-.takeaway-item h5 {
-    color: var(--positive-score);
-    margin: 0 0 0.5rem 0;
     font-size: 0.9rem;
-    font-weight: bold;
+    line-height: 1.4;
 }
 
-.takeaway-item p {
-    color: var(--text-primary);
+.tip-item strong {
+    color: var(--accent-color);
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+/* Formula section within cards */
+.formula-section {
     margin: 0;
-    font-size: 0.85rem;
-}
-
-.factors-note {
-    margin: 2rem 0 0 0;
-    padding: 1.5rem;
-    background-color: var(--hover-bg);
-    border-radius: 6px;
-    border-left: 4px solid var(--negative-score);
-}
-
-.factors-note h4 {
-    color: var(--negative-score);
-    margin: 0 0 1rem 0;
-    font-size: 1.1rem;
-}
-
-.factors-note ul {
-    margin: 0.5rem 0;
-    padding-left: 1.5rem;
-}
-
-.factors-note li {
-    margin: 0.5rem 0;
-    color: var(--text-primary);
-}
-
-/* Clean HTML Structure Styles */
-.graphs-container {
-    margin: 2rem 0;
 }
 
 .formula-item {
-    margin: 0.5rem 0;
-    padding: 0.25rem 0;
-}
-
-.formula-item strong {
-    color: var(--accent-color);
-    display: inline-block;
-    min-width: 120px;
-    margin-right: 0.5rem;
-}
-
-.formula-item code {
-    background: none;
-    color: var(--text-primary);
-    font-size: 0.9rem;
-}
-
-.formula-notes {
-    margin-top: 1rem;
-    padding: 0.75rem;
-    background-color: var(--hover-bg);
-    border-radius: 4px;
-    border-left: 3px solid var(--positive-score);
-}
-
-.formula-notes p {
-    margin: 0.25rem 0;
-    font-size: 0.85rem;
-    color: var(--text-primary);
-}
-
-.formula-notes strong {
-    color: var(--positive-score);
-}
-
-.strategy-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.strategy-item {
+    margin: 1rem 0;
     padding: 1rem;
     background-color: var(--hover-bg);
     border-radius: 6px;
     border-left: 3px solid var(--accent-color);
 }
 
-.strategy-item h5 {
-    margin: 0 0 0.5rem 0;
-    color: var(--accent-color);
-    font-size: 0.9rem;
-    font-weight: 600;
+.formula-item:first-child {
+    margin-top: 0;
 }
 
-.strategy-item p {
+.formula-item:last-child {
+    margin-bottom: 0;
+}
+
+.formula-item strong {
+    color: var(--accent-color);
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+
+.formula-item code {
+    background: var(--background-color);
+    color: var(--text-primary);
+    padding: 0.5rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    display: block;
+    margin: 0.5rem 0;
+    border: 1px solid var(--border-color);
+}
+
+.formula-item p {
+    margin: 0.5rem 0 0 0;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+/* Limitations grid within cards */
+.limitations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.75rem;
+    margin-top: 1rem;
+}
+
+.limitation-item {
+    padding: 0.75rem;
+    background-color: var(--hover-bg);
+    border-radius: 6px;
+    border-left: 3px solid var(--negative-score);
+}
+
+.limitation-item strong {
+    color: var(--negative-score);
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.limitation-item p {
     margin: 0;
     font-size: 0.85rem;
     color: var(--text-primary);
     line-height: 1.4;
 }
 
-/* Legend Improvements */
-.shared-legend {
-    background-color: var(--container-bg);
-    border: 1px solid var(--border-color);
-    border-radius: 8px;
-    padding: 1.5rem;
-    margin: 1.5rem 0;
+/* Graph sections within cards */
+.graph-column {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
 }
 
-.shared-legend h3 {
+.graph-item {
+    margin: 0;
+}
+
+.graph-item h4 {
     margin: 0 0 1rem 0;
-    color: var(--accent-color);
+    color: var(--text-primary);
     font-size: 1.1rem;
+    font-weight: 500;
+    text-align: center;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border-color);
 }
 
-.legend-items {
+.plotly-graph {
+    min-height: 400px;
+    background-color: var(--background-color);
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
+}
+
+/* Legend styles within cards */
+#unified-legend-items {
     display: flex;
     flex-wrap: wrap;
     gap: 0.75rem;
@@ -1101,10 +999,17 @@ td.rank {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.25rem 0.5rem;
+    padding: 0.5rem 0.75rem;
     background-color: var(--hover-bg);
-    border-radius: 4px;
+    border-radius: 6px;
+    border: 1px solid var(--border-color);
     font-size: 0.85rem;
+    transition: all 0.2s ease;
+}
+
+.legend-item:hover {
+    background-color: var(--background-color);
+    border-color: var(--accent-color);
 }
 
 .legend-color {
@@ -1118,6 +1023,7 @@ td.rank {
     background: none !important;
     border: 2px dashed;
     height: 2px;
+    width: 20px;
 }
 
 .legend-text {
