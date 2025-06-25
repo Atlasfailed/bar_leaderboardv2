@@ -189,143 +189,137 @@ class NationRankings {
         const modalContent = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h2>Score Breakdown: ${data.country_name} (${data.country_code}) - ${data.game_type}</h2>
-                    <button class="modal-close" onclick="document.getElementById('scoreBreakdownModal').style.display='none'">&times;</button>
+                    <h2>${this.getCountryFlag(data.country_code)} ${data.country_name} (${data.country_code}) - ${data.game_type}</h2>
+                    <button class="modal-close" onclick="document.getElementById('scoreBreakdownModal').style.display='none'" title="Close">✕</button>
                 </div>
                 
-                <div class="breakdown-section">
-                    <h3>Scoring System</h3>
-                    <p>${data.explanation.scoring_system}</p>
-                    <p><strong>Calculation:</strong> ${data.explanation.calculation}</p>
-                    <div class="confidence-details">
-                        <p><strong>Confidence Factor Formula:</strong></p>
-                        <div class="formula-explanation">
-                            <strong>k = Average Games per Nation ÷ 2 = ${data.handicap_info.k_value}</strong><br>
-                            <strong>Confidence Factor = 2k = ${data.handicap_info.confidence_factor}</strong>
+                <div class="modal-body">
+                    <div class="breakdown-section">
+                        <h3>Overall Performance</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value ${data.adjusted_score >= 0 ? 'positive' : 'negative'}">${data.adjusted_score >= 0 ? '+' : ''}${Math.round(data.adjusted_score)}</div>
+                                <div class="stat-label">Final Score</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value positive">${data.score_breakdown.win_rate_percentage}%</div>
+                                <div class="stat-label">Win Rate</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${data.total_games}</div>
+                                <div class="stat-label">Total Games</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${data.total_players}</div>
+                                <div class="stat-label">Active Players</div>
+                            </div>
                         </div>
-                        <p><em>${data.explanation.interpretation}</em></p>
+                        <div class="minimum-games-status">
+                            ${data.handicap_info.meets_minimum 
+                                ? `<span class="status-success">✓ Meets minimum activity requirement (${data.total_games} ≥ ${data.handicap_info.min_games_required} games)</span>`
+                                : `<span class="status-warning">⚠ Below minimum activity threshold (${data.total_games} < ${data.handicap_info.min_games_required} games)</span>`
+                            }
+                        </div>
                     </div>
-                    <p><small>${data.explanation.comparison}</small></p>
-                </div>
 
-                <div class="breakdown-section">
-                    <h3>Overall Statistics</h3>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-value ${data.adjusted_score >= 0 ? 'positive' : 'negative'}">${data.adjusted_score >= 0 ? '+' : ''}${Math.round(data.adjusted_score)}</div>
-                            <div class="stat-label">Adjusted Score</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${data.total_players}</div>
-                            <div class="stat-label">Total Players</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${data.total_games}</div>
-                            <div class="stat-label">Total Games</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${data.handicap_info.confidence_factor}</div>
-                            <div class="stat-label">Confidence Factor</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value ${data.handicap_info.meets_minimum ? 'positive' : 'negative'}">${data.handicap_info.min_games_required}</div>
-                            <div class="stat-label">Min Games Required</div>
+                    <div class="breakdown-section">
+                        <h3>Game Results Breakdown</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value positive">${data.score_breakdown.total_wins}</div>
+                                <div class="stat-label">Total Wins</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value negative">${data.score_breakdown.total_losses}</div>
+                                <div class="stat-label">Total Losses</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value ${data.raw_score >= 0 ? 'positive' : 'negative'}">${data.raw_score >= 0 ? '+' : ''}${data.raw_score}</div>
+                                <div class="stat-label">Net Result (W-L)</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value ${data.raw_percentage >= 0 ? 'positive' : 'negative'}">${data.raw_percentage >= 0 ? '+' : ''}${Math.round(data.raw_percentage)}</div>
+                                <div class="stat-label">Raw Score</div>
+                            </div>
                         </div>
                     </div>
-                    <div class="minimum-games-status">
-                        ${data.handicap_info.meets_minimum 
-                            ? `<span class="status-success">✓ Meets minimum games requirement (${data.total_games} ≥ ${data.handicap_info.min_games_required})</span>`
-                            : `<span class="status-warning">⚠ Below minimum games threshold (${data.total_games} < ${data.handicap_info.min_games_required})</span>`
-                        }
-                    </div>
-                </div>
 
-                <div class="breakdown-section">
-                    <h3>Score Comparison</h3>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-value ${data.raw_percentage >= 0 ? 'positive' : 'negative'}">${data.raw_percentage >= 0 ? '+' : ''}${Math.round(data.raw_percentage)}</div>
-                            <div class="stat-label">Raw Win Rate</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value ${data.adjusted_score >= 0 ? 'positive' : 'negative'}">${data.adjusted_score >= 0 ? '+' : ''}${Math.round(data.adjusted_score)}</div>
-                            <div class="stat-label">Confidence Adjusted</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${data.handicap_info.k_value}</div>
-                            <div class="stat-label">K Value</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value positive">${data.score_breakdown.win_rate_percentage}%</div>
-                            <div class="stat-label">Win Rate</div>
+                    <div class="breakdown-section">
+                        <h3>Player Contribution Analysis</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-value positive">${data.player_distribution.positive_players}</div>
+                                <div class="stat-label">Net Winners</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value negative">${data.player_distribution.negative_players}</div>
+                                <div class="stat-label">Net Losers</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${data.player_distribution.zero_players}</div>
+                                <div class="stat-label">Even W/L</div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="breakdown-section">
-                    <h3>Game Results</h3>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-value positive">${data.score_breakdown.total_wins}</div>
-                            <div class="stat-label">Total Wins</div>
+                    <div class="breakdown-section">
+                        <h3>Confidence Factor System</h3>
+                        <div class="confidence-details">
+                            <p><strong>How the scoring works:</strong> ${data.explanation.scoring_system}</p>
+                            <div class="formula-explanation">
+                                <strong>Formula:</strong> ${data.explanation.calculation}<br>
+                                <strong>k-value:</strong> Average Games per Nation ÷ 2 = ${data.handicap_info.k_value}<br>
+                                <strong>Confidence Factor:</strong> 2k = ${data.handicap_info.confidence_factor}
+                            </div>
+                            <p><em>${data.explanation.interpretation}</em></p>
+                            <p><small style="color: var(--text-secondary);">${data.explanation.comparison}</small></p>
                         </div>
-                        <div class="stat-card">
-                            <div class="stat-value negative">${data.score_breakdown.total_losses}</div>
-                            <div class="stat-label">Total Losses</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value ${data.raw_score >= 0 ? 'positive' : 'negative'}">${data.raw_score >= 0 ? '+' : ''}${data.raw_score}</div>
-                            <div class="stat-label">Net Result</div>
+                        <div class="stats-grid" style="margin-top: 1rem;">
+                            <div class="stat-card">
+                                <div class="stat-value">${data.handicap_info.k_value}</div>
+                                <div class="stat-label">K-Value</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value">${data.handicap_info.confidence_factor}</div>
+                                <div class="stat-label">Confidence Factor</div>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="breakdown-section">
-                    <h3>Player Distribution</h3>
-                    <div class="stats-grid">
-                        <div class="stat-card">
-                            <div class="stat-value positive">${data.player_distribution.positive_players}</div>
-                            <div class="stat-label">Players with Net Wins</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value negative">${data.player_distribution.negative_players}</div>
-                            <div class="stat-label">Players with Net Losses</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-value">${data.player_distribution.zero_players}</div>
-                            <div class="stat-label">Players with Even W/L</div>
-                        </div>
-                    </div>
-                </div>
-
-                ${data.top_contributors.length > 0 ? `
-                <div class="breakdown-section">
-                    <h3>Top Contributors (Most Wins)</h3>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Player</th>
-                                <th>Net Score</th>
-                                <th>Wins</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${data.top_contributors.map(player => `
+                    ${data.top_contributors.length > 0 ? `
+                    <div class="breakdown-section">
+                        <h3>Top Weekly Contributors</h3>
+                        <p style="color: var(--text-secondary); margin-bottom: 1rem; font-size: 0.9rem;">
+                            Players who contributed the most wins for ${data.country_name} this week
+                        </p>
+                        <table>
+                            <thead>
                                 <tr>
-                                    <td>${player.name}</td>
-                                    <td class="positive">+${player.score}</td>
-                                    <td>${player.wins}</td>
+                                    <th>Rank</th>
+                                    <th>Player</th>
+                                    <th>Net Score</th>
+                                    <th>Total Wins</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                ${data.top_contributors.map((player, index) => `
+                                    <tr>
+                                        <td style="text-align: center; font-weight: bold; color: var(--accent-color);">#${index + 1}</td>
+                                        <td style="font-weight: 500;">${player.name}</td>
+                                        <td class="positive" style="font-weight: bold;">+${player.score}</td>
+                                        <td style="text-align: center;">${player.wins}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    ` : ''}
                 </div>
-                ` : ''}
             </div>
         `;
 
         modal.innerHTML = modalContent;
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
 
         // Close modal when clicking outside
         modal.onclick = (e) => {

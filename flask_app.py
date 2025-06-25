@@ -28,6 +28,12 @@ class DataManager:
         self.player_contributions_df: Optional[pd.DataFrame] = None
         self.processed_leaderboards_cache: Dict[str, Any] = {}
         self.last_updated_time: str = "N/A"
+        
+        # Season 1 data
+        self.season_1_leaderboard_df: Optional[pd.DataFrame] = None
+        self.season_1_nation_rankings_df: Optional[pd.DataFrame] = None
+        self.season_1_player_contributions_df: Optional[pd.DataFrame] = None
+        self.season_1_processed_cache: Dict[str, Any] = {}
     
     @staticmethod
     def safe_json_convert(value: Any) -> Any:
@@ -140,6 +146,40 @@ class DataManager:
             print(f"ERROR loading player contributions data: {e}")
             return False
     
+    def load_season_1_data(self) -> bool:
+        """Load and preprocess season 1 data."""
+        try:
+            # Load season 1 leaderboard data
+            if os.path.exists(config.paths.season_1_leaderboard_parquet):
+                self.season_1_leaderboard_df = pd.read_parquet(config.paths.season_1_leaderboard_parquet)
+                print(f"Loaded {len(self.season_1_leaderboard_df)} season 1 leaderboard records.")
+                
+                # Pre-process season 1 data for faster API responses
+                print("Pre-processing season 1 leaderboard data...")
+                self.season_1_processed_cache = self._preprocess_leaderboard_data_for_season(self.season_1_leaderboard_df)
+                print(f"Pre-processed {len(self.season_1_processed_cache)} season 1 leaderboard combinations.")
+            else:
+                print(f"WARNING: Season 1 leaderboard file not found at: {config.paths.season_1_leaderboard_parquet}")
+            
+            # Load season 1 nation rankings data
+            if os.path.exists(config.paths.season_1_nation_rankings_parquet):
+                self.season_1_nation_rankings_df = pd.read_parquet(config.paths.season_1_nation_rankings_parquet)
+                print(f"Loaded {len(self.season_1_nation_rankings_df)} season 1 nation ranking records.")
+            else:
+                print(f"WARNING: Season 1 nation ranking file not found at: {config.paths.season_1_nation_rankings_parquet}")
+            
+            # Load season 1 player contributions data
+            if os.path.exists(config.paths.season_1_player_contributions_parquet):
+                self.season_1_player_contributions_df = pd.read_parquet(config.paths.season_1_player_contributions_parquet)
+                print(f"Loaded {len(self.season_1_player_contributions_df)} season 1 player contribution records.")
+            else:
+                print(f"WARNING: Season 1 player contributions file not found at: {config.paths.season_1_player_contributions_parquet}")
+            
+            return True
+        except Exception as e:
+            print(f"ERROR loading season 1 data: {e}")
+            return False
+    
     def load_all_data(self) -> bool:
         """Load all data files and return success status."""
         success = True
@@ -147,6 +187,7 @@ class DataManager:
         success &= self.load_country_data()
         success &= self.load_nation_rankings()
         success &= self.load_player_contributions()
+        success &= self.load_season_1_data()
         return success
     
     def _preprocess_leaderboard_data(self) -> Dict[str, Any]:
@@ -184,21 +225,69 @@ class DataManager:
         
         return processed
     
+    def _preprocess_leaderboard_data_for_season(self, leaderboard_df: pd.DataFrame) -> Dict[str, Any]:
+        """Pre-process leaderboard data for a specific season to create fast lookup tables."""
+        if leaderboard_df is None or leaderboard_df.empty:
+            return {}
+        
+        processed = {}
+        
+        # Get unique combinations of leaderboard_id and game_type
+        combinations = leaderboard_df[['leaderboard_id', 'game_type']].drop_duplicates()
+        
+        for _, row in combinations.iterrows():
+            leaderboard_id = row['leaderboard_id']
+            game_type = row['game_type']
+            key = f"{leaderboard_id}_{game_type}"
+            
+            # Filter data for this combination
+            filtered_df = leaderboard_df[
+                (leaderboard_df['leaderboard_id'] == leaderboard_id) & 
+                (leaderboard_df['game_type'] == game_type)
+            ]
+            
+            if not filtered_df.empty:
+                processed[key] = self._process_player_data(filtered_df)
+        
+        # Also create global leaderboards for each game type
+        game_types = leaderboard_df['game_type'].unique()
+        for game_type in game_types:
+            key = f"global_{game_type}"
+            filtered_df = leaderboard_df[leaderboard_df['game_type'] == game_type]
+            
+            if not filtered_df.empty:
+                processed[key] = self._process_player_data(filtered_df)
+        
+        return processed
+    
     def _process_player_data(self, filtered_df: pd.DataFrame) -> Dict[str, Any]:
         """Process player data for a specific leaderboard/game type combination."""
         # Get latest entry for each player
         latest_entries = filtered_df.sort_values('start_time').groupby('name').tail(1)
         
+        # Determine if this is a country-specific leaderboard
+        is_country_leaderboard = False
+        if not filtered_df.empty:
+            sample_leaderboard_id = filtered_df['leaderboard_id'].iloc[0]
+            is_country_leaderboard = sample_leaderboard_id.startswith('country_')
+        
         # Convert to list of player dictionaries
         players = []
         for _, player in latest_entries.iterrows():
-            players.append({
+            country_code = player.get('countryCode', '')
+            player_data = {
                 "name": player['name'],
                 "display_name": player['name'],
                 "leaderboard_rating": float(player['leaderboard_rating']),
-                "countryCode": player.get('countryCode', ''),
+                "countryCode": country_code,
                 "user_id": int(player['user_id'])
-            })
+            }
+            
+            # Add flag information for global and regional leaderboards (not country-specific)
+            if not is_country_leaderboard and country_code:
+                player_data["flag"] = f"https://flagcdn.com/w20/{country_code.lower()}.png"
+            
+            players.append(player_data)
         
         # Sort by rating (descending) and add ranks
         players.sort(key=lambda x: x['leaderboard_rating'], reverse=True)
@@ -479,27 +568,58 @@ def get_status():
 @app.route('/api/leaderboards')
 def get_leaderboards():
     """Provides list of available leaderboards."""
-    if data_manager.leaderboard_df is None:
-        return jsonify({"error": "Leaderboard data not available"}), 500
+    from flask import request
+    season = int(request.args.get('season', config.seasons.default_season))
+    
+    # Select appropriate dataset based on season
+    if season == 1 and hasattr(data_manager, 'season_1_leaderboard_df') and data_manager.season_1_leaderboard_df is not None:
+        leaderboard_df = data_manager.season_1_leaderboard_df
+    elif season == 2 and data_manager.leaderboard_df is not None:
+        leaderboard_df = data_manager.leaderboard_df
+    else:
+        return jsonify({"error": "Leaderboard data not available for requested season"}), 500
     
     # Get unique leaderboard types from the data
     nations = []
     regions = []
     
-    for leaderboard_id in data_manager.leaderboard_df['leaderboard_id'].unique():
-        # Use leaderboard_id as name if it's descriptive, otherwise use country mapping
-        if len(leaderboard_id) > 2:  # Likely a region name
-            country_name = leaderboard_id
-            regions.append({
-                "id": leaderboard_id,
-                "name": country_name,
-                "code": leaderboard_id
-            })
-        else:
-            country_name = data_manager.country_name_map.get(leaderboard_id, leaderboard_id)
+    for leaderboard_id in leaderboard_df['leaderboard_id'].unique():
+        if leaderboard_id == 'global':
+            # Skip global leaderboard in the dropdown
+            continue
+        elif leaderboard_id.startswith('country_'):
+            # Extract country code from country_XX format (Season 1 style)
+            country_code = leaderboard_id.replace('country_', '')
+            country_name = data_manager.country_name_map.get(country_code, country_code)
             nations.append({
                 "id": leaderboard_id,
                 "name": country_name,
+                "code": country_code,
+                "flag": f"https://flagcdn.com/w20/{country_code.lower()}.png"
+            })
+        elif leaderboard_id.startswith('region_'):
+            # Format region name (replace underscores with spaces) (Season 1 style)
+            region_name = leaderboard_id.replace('region_', '').replace('_', ' ')
+            regions.append({
+                "id": leaderboard_id,
+                "name": region_name,
+                "code": leaderboard_id
+            })
+        elif len(leaderboard_id) == 2 and leaderboard_id.isupper():
+            # Bare country code format (Season 2 style)
+            country_code = leaderboard_id
+            country_name = data_manager.country_name_map.get(country_code, country_code)
+            nations.append({
+                "id": leaderboard_id,
+                "name": country_name,
+                "code": country_code,
+                "flag": f"https://flagcdn.com/w20/{country_code.lower()}.png"
+            })
+        else:
+            # Regional leaderboard (Season 2 style with descriptive names)
+            regions.append({
+                "id": leaderboard_id,
+                "name": leaderboard_id,
                 "code": leaderboard_id
             })
     
@@ -515,30 +635,52 @@ def get_leaderboards():
 @app.route('/api/leaderboard/<leaderboard_id>/<game_type>')
 def get_leaderboard(leaderboard_id, game_type):
     """Get leaderboard data for a specific leaderboard and game type."""
-    if not data_manager.processed_leaderboards_cache:
+    from flask import request
+    season = int(request.args.get('season', config.seasons.default_season))
+    
+    # Select appropriate cache based on season
+    if season == 1 and hasattr(data_manager, 'season_1_processed_cache'):
+        cache = data_manager.season_1_processed_cache
+    elif season == 2:
+        cache = data_manager.processed_leaderboards_cache
+    else:
+        return jsonify({"error": "Leaderboard data not available for requested season"}), 500
+    
+    if not cache:
         return jsonify({"error": "Leaderboard data not available"}), 500
     
     game_type_str = game_type.replace('%20', ' ')
     cache_key = f"{leaderboard_id}_{game_type_str}"
     
     # Use preprocessed data for fast lookup
-    if cache_key in data_manager.processed_leaderboards_cache:
-        return jsonify(data_manager.processed_leaderboards_cache[cache_key])
+    if cache_key in cache:
+        return jsonify(cache[cache_key])
     else:
         return jsonify({"players": [], "total_players": 0})
 
 @app.route('/api/leaderboard/global/<game_type>')
 def get_global_leaderboard(game_type):
     """Get global leaderboard data for a specific game type."""
-    if not data_manager.processed_leaderboards_cache:
+    from flask import request
+    season = int(request.args.get('season', config.seasons.default_season))
+    
+    # Select appropriate cache based on season
+    if season == 1 and hasattr(data_manager, 'season_1_processed_cache'):
+        cache = data_manager.season_1_processed_cache
+    elif season == 2:
+        cache = data_manager.processed_leaderboards_cache
+    else:
+        return jsonify({"error": "Leaderboard data not available for requested season"}), 500
+    
+    if not cache:
         return jsonify({"error": "Leaderboard data not available"}), 500
     
     game_type_str = game_type.replace('%20', ' ')
     cache_key = f"global_{game_type_str}"
     
     # Use preprocessed data for fast lookup
-    if cache_key in data_manager.processed_leaderboards_cache:
-        return jsonify(data_manager.processed_leaderboards_cache[cache_key])
+    if cache_key in cache:
+        return jsonify(cache[cache_key])
     else:
         return jsonify({"players": [], "total_players": 0})
 

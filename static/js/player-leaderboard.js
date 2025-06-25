@@ -3,6 +3,7 @@ class PlayerLeaderboard {
         this.API_URL = "";  // Use relative URLs since we're on the same server
         this.fullLeaderboardData = [];
         this.totalPlayersOnBoard = 0;
+        this.currentSeason = 2; // Default to Season 2
         this.init();
     }
 
@@ -20,6 +21,7 @@ class PlayerLeaderboard {
         this.searchInput = document.getElementById('searchInput');
         this.searchResultsContainer = document.getElementById('searchResults');
         this.statusHeader = document.getElementById('status-header');
+        this.seasonButtons = document.querySelectorAll('.season-btn');
     }
 
     setupEventListeners() {
@@ -34,6 +36,13 @@ class PlayerLeaderboard {
         });
 
         this.searchInput.addEventListener('input', Utils.debounce(() => this.handleAutocompleteSearch(), 300));
+        
+        // Season navigation event listeners
+        this.seasonButtons.forEach(button => {
+            button.addEventListener('click', (e) => {
+                this.switchSeason(parseInt(e.currentTarget.dataset.season));
+            });
+        });
     }
 
     async updateLeaderboard() {
@@ -51,8 +60,8 @@ class PlayerLeaderboard {
         this.searchResultsContainer.innerHTML = '';
 
         const endpoint = (groupCode === 'global')
-            ? `${this.API_URL}/api/leaderboard/global/${gameMode}`
-            : `${this.API_URL}/api/leaderboard/${groupCode}/${gameMode}`;
+            ? `${this.API_URL}/api/leaderboard/global/${gameMode}?season=${this.currentSeason}`
+            : `${this.API_URL}/api/leaderboard/${groupCode}/${gameMode}?season=${this.currentSeason}`;
 
         try {
             const response = await fetch(endpoint);
@@ -61,7 +70,8 @@ class PlayerLeaderboard {
             this.totalPlayersOnBoard = data.total_players;
 
             const topN = Math.min(50, this.totalPlayersOnBoard);
-            this.leaderboardTitle.textContent = `Top ${topN} of ${this.totalPlayersOnBoard} Players - ${groupName} - ${gameMode}`;
+            const seasonText = this.currentSeason === 1 ? 'Season 1' : 'Season 2 (Current)';
+            this.leaderboardTitle.textContent = `Top ${topN} of ${this.totalPlayersOnBoard} Players - ${groupName} - ${gameMode} - ${seasonText}`;
 
             this.displayLeaderboard(this.fullLeaderboardData.slice(0, 50));
         } catch (error) {
@@ -83,9 +93,16 @@ class PlayerLeaderboard {
         
         playerList.forEach(player => {
             const row = document.createElement('tr');
+            
+            // Create the player name with flag if available
+            let playerNameHtml = player.display_name;
+            if (player.flag && player.countryCode) {
+                playerNameHtml = `<img src="${player.flag}" alt="${player.countryCode}" class="flag-icon" onerror="this.style.display='none'"> ${player.name}`;
+            }
+            
             row.innerHTML = `
                 <td class="rank">${player.rank}</td>
-                <td>${player.display_name}</td>
+                <td class="player-name">${playerNameHtml}</td>
                 <td>${player.leaderboard_rating.toFixed(2)}</td>
             `;
             fragment.appendChild(row);
@@ -143,8 +160,12 @@ class PlayerLeaderboard {
 
     async initializePage() {
         this.fetchStatus();
+        this.initializeLeaderboards();
+    }
+
+    async initializeLeaderboards() {
         try {
-            const response = await fetch(`${this.API_URL}/api/leaderboards`);
+            const response = await fetch(`${this.API_URL}/api/leaderboards?season=${this.currentSeason}`);
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
             const data = await response.json();
@@ -155,8 +176,14 @@ class PlayerLeaderboard {
                 group.label = label;
                 items.forEach(item => {
                     const option = document.createElement('option');
-                    option.value = item.code;
-                    option.textContent = item.name;
+                    option.value = item.id; // Use id instead of code for proper API calls
+                    option.textContent = item.name; // Clean name without emoji
+                    
+                    // Store flag info as data attribute
+                    if (item.flag) {
+                        option.setAttribute('data-flag', item.flag);
+                    }
+                    
                     group.appendChild(option);
                 });
                 return group;
@@ -181,6 +208,24 @@ class PlayerLeaderboard {
             this.leaderboardSelector.innerHTML = `<option>Error</option>`;
             Utils.showMessage(this.leaderboardBody, 'Could not connect to backend.', true);
         }
+    }
+
+    switchSeason(season) {
+        if (season === this.currentSeason) return;
+        
+        this.currentSeason = season;
+        
+        // Update active season button
+        this.seasonButtons.forEach(btn => {
+            btn.classList.toggle('active', parseInt(btn.dataset.season) === season);
+        });
+        
+        // Clear search and update data
+        this.searchInput.value = '';
+        this.searchResultsContainer.innerHTML = '';
+        
+        // Reinitialize leaderboard for the new season
+        this.initializeLeaderboards();
     }
 }
 

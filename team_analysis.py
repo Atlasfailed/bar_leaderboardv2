@@ -15,11 +15,17 @@ player collaboration patterns. It uses a hybrid network approach:
     not everyone is available for every game. These clusters are the
     "core rosters".
 
-3.  Each roster is analyzed in detail to calculate win rates, player attendance,
+3.  Communities are filtered to ensure each member has played a minimum number
+    of games with a minimum percentage of other community members (not just
+    in parties, but any games together on the same team). This ensures genuine
+    team cohesion.
+
+4.  Each roster is analyzed in detail to calculate win rates, player attendance,
     and other stats, now broken down by game mode for greater accuracy.
 
 Usage:
     python team_analysis.py [--min-matches N] [--min-team-matches N]
+                           [--min-cooccurrence-games N] [--min-cooccurrence-percentage F]
 """
 
 import pandas as pd
@@ -36,13 +42,16 @@ from utils import setup_logging, data_loader, safe_file_write, merge_player_data
 class TeamAnalyzer:
     """Handles the entire team roster analysis pipeline."""
 
-    def __init__(self, min_matches_connection, min_team_matches, min_roster_size, max_roster_size):
+    def __init__(self, min_matches_connection, min_team_matches, min_roster_size, max_roster_size, 
+                 min_cooccurrence_games, min_cooccurrence_percentage):
         self.logger = setup_logging(self.__class__.__name__)
         config.setup_ssl()
         self.min_matches_connection = min_matches_connection
         self.min_team_matches = min_team_matches
         self.min_roster_size = min_roster_size
         self.max_roster_size = max_roster_size
+        self.min_cooccurrence_games = min_cooccurrence_games
+        self.min_cooccurrence_percentage = min_cooccurrence_percentage
 
     def run_analysis(self):
         """Main entry point to run the full analysis pipeline."""
@@ -136,12 +145,22 @@ class TeamAnalyzer:
         match_win_lookup = data.drop_duplicates('match_id').set_index('match_id')['winning_team'].to_dict()
         player_lookup = players_data.set_index('user_id').to_dict('index')
 
+        # Build game co-occurrence matrix for community filtering
+        self.logger.info("Building game co-occurrence matrix for community filtering...")
+        game_cooccurrence = self._build_game_cooccurrence_matrix(data)
+
         # Using a simple community detection for this refactored version
         communities = list(nx.community.louvain_communities(G, weight='weight'))
         self.logger.info(f"Detected {len(communities)} communities.")
+        
+        # Filter communities based on game co-occurrence requirement
+        filtered_communities = self._filter_communities_by_cooccurrence(
+            communities, game_cooccurrence, self.min_cooccurrence_games, self.min_cooccurrence_percentage
+        )
+        self.logger.info(f"After filtering by co-occurrence requirement: {len(filtered_communities)} communities.")
 
         analyzed_rosters = []
-        for i, roster_ids in enumerate(communities):
+        for i, roster_ids in enumerate(filtered_communities):
             if not (self.min_roster_size <= len(roster_ids) <= self.max_roster_size):
                 continue
 
@@ -173,12 +192,96 @@ class TeamAnalyzer:
         # For simplicity, this refactored version doesn't produce the separate "unrestricted_communities"
         return analyzed_rosters, []
 
+    def _build_game_cooccurrence_matrix(self, data):
+        """Build a matrix of how many games each pair of players has played together."""
+        self.logger.info("Building game co-occurrence matrix from all matches...")
+        
+        # Group by match_id and team_id to get teammates in each match
+        match_teams = data.groupby(['match_id', 'team_id'])['user_id'].apply(list).reset_index()
+        
+        # Count co-occurrences for each pair of players on the same team
+        cooccurrence_counts = Counter()
+        
+        for _, row in match_teams.iterrows():
+            players = row['user_id']
+            if len(players) > 1:
+                for pair in combinations(players, 2):
+                    # Always use the same order for consistency
+                    pair_key = tuple(sorted(pair))
+                    cooccurrence_counts[pair_key] += 1
+        
+        self.logger.info(f"Built co-occurrence matrix with {len(cooccurrence_counts):,} player pairs.")
+        return cooccurrence_counts
+
+    def _filter_communities_by_cooccurrence(self, communities, game_cooccurrence, min_games=5, min_percentage=0.10):
+        """
+        Filter communities to ensure each member has played at least min_games 
+        with at least min_percentage of the other community members.
+        """
+        filtered_communities = []
+        
+        for community in communities:
+            community_list = list(community)
+            if len(community_list) < 2:
+                continue
+                
+            # Calculate required number of connections per player
+            required_connections = max(1, int(len(community_list) * min_percentage))
+            
+            valid_players = []
+            for player in community_list:
+                # Count how many other community members this player has played with
+                connections_count = 0
+                for other_player in community_list:
+                    if player != other_player:
+                        pair_key = tuple(sorted([player, other_player]))
+                        games_together = game_cooccurrence.get(pair_key, 0)
+                        if games_together >= min_games:
+                            connections_count += 1
+                
+                # Check if player meets the requirement
+                if connections_count >= required_connections:
+                    valid_players.append(player)
+            
+            # Only keep the community if it still has enough valid players
+            if len(valid_players) >= self.min_roster_size:
+                filtered_communities.append(set(valid_players))
+                self.logger.debug(f"Community filtered from {len(community_list)} to {len(valid_players)} players "
+                                 f"(required {required_connections} connections of {min_games}+ games each)")
+        
+        return filtered_communities
+
     def _calculate_roster_stats(self, roster_ids, party_info_list, player_to_party_map, match_win_lookup):
         relevant_party_indices = {idx for pid in roster_ids for idx in player_to_party_map.get(pid, [])}
-        team_match_info = [party_info_list[idx] for idx in relevant_party_indices if len(set(roster_ids).intersection(party_info_list[idx]['players'])) >= 2]
+        
+        # Get all parties with at least 2 roster members
+        potential_team_matches = [
+            party_info_list[idx] for idx in relevant_party_indices 
+            if len(set(roster_ids).intersection(party_info_list[idx]['players'])) >= 2
+        ]
 
-        if not team_match_info:
+        if not potential_team_matches:
             return None
+
+        # Group by match_id and select the party with the most roster members for each match
+        # This ensures each match is only counted once per roster
+        match_to_best_party = {}
+        for match in potential_team_matches:
+            match_id = match['match_id']
+            roster_members_in_party = len(set(roster_ids).intersection(match['players']))
+            
+            if match_id not in match_to_best_party or roster_members_in_party > match_to_best_party[match_id]['roster_count']:
+                match_to_best_party[match_id] = {
+                    'party_info': match,
+                    'roster_count': roster_members_in_party
+                }
+        
+        # Extract the best party for each match
+        team_match_info = [entry['party_info'] for entry in match_to_best_party.values()]
+        
+        self.logger.debug(f"Roster with {len(roster_ids)} players: "
+                         f"Found {len(potential_team_matches)} potential party instances, "
+                         f"reduced to {len(team_match_info)} unique matches after deduplication.")
 
         stats_by_mode = defaultdict(lambda: {'wins': 0, 'losses': 0, 'matches': 0})
         for match in team_match_info:
@@ -255,13 +358,17 @@ def main():
     parser.add_argument("--min-team-matches", type=int, default=config.team_analysis.min_team_matches, help="Min matches for a team to be included.")
     parser.add_argument("--min-roster-size", type=int, default=config.team_analysis.min_roster_size, help="Min players in a roster.")
     parser.add_argument("--max-roster-size", type=int, default=config.team_analysis.max_roster_size, help="Max players in a roster.")
+    parser.add_argument("--min-cooccurrence-games", type=int, default=config.team_analysis.min_cooccurrence_games, help="Min games together for community membership.")
+    parser.add_argument("--min-cooccurrence-percentage", type=float, default=config.team_analysis.min_cooccurrence_percentage, help="Min percentage of community to have played with.")
     args = parser.parse_args()
 
     analyzer = TeamAnalyzer(
         min_matches_connection=args.min_matches,
         min_team_matches=args.min_team_matches,
         min_roster_size=args.min_roster_size,
-        max_roster_size=args.max_roster_size
+        max_roster_size=args.max_roster_size,
+        min_cooccurrence_games=args.min_cooccurrence_games,
+        min_cooccurrence_percentage=args.min_cooccurrence_percentage
     )
     
     try:

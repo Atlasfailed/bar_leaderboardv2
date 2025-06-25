@@ -11,6 +11,8 @@ import os
 from typing import Optional, Dict, Any
 from dataclasses import dataclass
 from pathlib import Path
+from datetime import datetime, timezone
+import pytz
 
 # ==============================================================================
 # --- Base Configuration ---
@@ -40,8 +42,11 @@ class DataMartConfig:
 @dataclass
 class AnalysisConfig:
     """Configuration for various analysis parameters."""
+    # Player leaderboard parameters
+    min_player_games_threshold: int = 25  # Minimum games for player leaderboards
+    
     # Nation ranking parameters
-    min_games_threshold: int = 50
+    min_games_threshold: int = 50  # Minimum games for nation rankings
     k_factor_base: float = 400.0
     
     # Team analysis parameters
@@ -49,6 +54,10 @@ class AnalysisConfig:
     min_team_matches: int = 10
     min_roster_size: int = 2
     max_roster_size: int = 10
+    
+    # Community filtering parameters
+    min_cooccurrence_games: int = 5        # Minimum games together for community membership
+    min_cooccurrence_percentage: float = 0.10  # Minimum percentage of community to have played with
     
     # Performance parameters
     max_workers: int = 4
@@ -106,6 +115,52 @@ class FilePaths:
     @property
     def team_communities_parquet(self) -> Path:
         return self.data_dir / "team_communities.parquet"
+    
+    # Season-specific data files
+    @property
+    def season_1_leaderboard_parquet(self) -> Path:
+        return self.data_dir / "season_1_final_leaderboard.parquet"
+    
+    @property 
+    def season_1_nation_rankings_parquet(self) -> Path:
+        return self.data_dir / "season_1_nation_rankings.parquet"
+    
+    @property
+    def season_1_player_contributions_parquet(self) -> Path:
+        return self.data_dir / "season_1_player_contributions.parquet"
+
+@dataclass
+class SeasonConfig:
+    """Configuration for BAR seasons."""
+    season_1_end: datetime
+    season_2_start: datetime
+    default_season: int = 2
+    
+    def __post_init__(self):
+        # Convert to UTC if timezone-aware, otherwise assume CET and convert
+        if self.season_1_end.tzinfo is None:
+            cet = pytz.timezone('CET')
+            self.season_1_end = cet.localize(self.season_1_end).astimezone(pytz.UTC)
+        if self.season_2_start.tzinfo is None:
+            cet = pytz.timezone('CET')
+            self.season_2_start = cet.localize(self.season_2_start).astimezone(pytz.UTC)
+    
+    def get_current_season(self) -> int:
+        """Get the current season based on current date."""
+        now = datetime.now(pytz.UTC)
+        if now >= self.season_2_start:
+            return 2
+        else:
+            return 1
+    
+    def is_season_active(self, season: int) -> bool:
+        """Check if a season is currently active."""
+        now = datetime.now(pytz.UTC)
+        if season == 1:
+            return now < self.season_2_start
+        elif season == 2:
+            return now >= self.season_2_start
+        return False
 
 class Config:
     """Main configuration class that brings together all configuration components."""
@@ -122,6 +177,12 @@ class Config:
         self.analysis = AnalysisConfig()
         # Add easy access to team analysis config
         self.team_analysis = self.analysis
+        
+        # Season configuration - Season 2 starts March 23rd, 2025, 12:00 CET
+        self.seasons = SeasonConfig(
+            season_1_end=datetime(2025, 3, 23, 11, 0, 0),  # 11:00 UTC = 12:00 CET
+            season_2_start=datetime(2025, 3, 23, 11, 0, 0)  # 11:00 UTC = 12:00 CET
+        )
     
     def setup_ssl(self):
         """Configure SSL settings for data mart access."""

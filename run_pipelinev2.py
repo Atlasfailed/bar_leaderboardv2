@@ -51,7 +51,7 @@ SUPPORTED_GAME_TYPES = [
 ]
 
 # Minimum games required for inclusion in leaderboards
-MIN_GAMES_THRESHOLD = 5
+MIN_GAMES_THRESHOLD = config.analysis.min_player_games_threshold
 
 # ==============================================================================
 # --- Leaderboard Calculation ---
@@ -112,25 +112,31 @@ class LeaderboardCalculator:
             
             self.logger.info(f"Processing country {i}/{len(countries)}: {country} ({total_players} total players)")
             
-            country_has_leaderboards = False
+            # Check if country qualifies by having 15+ qualified players in at least one game mode
+            country_qualifies = False
             for game_type in SUPPORTED_GAME_TYPES:
-                # Check if this country-game type combination has enough qualified players
                 game_data = country_data[country_data['game_type'] == game_type]
                 if game_data.empty:
                     continue
                 
-                # Count qualified players for this game type
                 player_game_counts = game_data['user_id'].value_counts()
                 qualified_players = player_game_counts[player_game_counts >= self.min_games_threshold]
                 
-                if len(qualified_players) >= 15:  # Ensure 15+ qualified players per game mode
+                if len(qualified_players) >= 15:
+                    country_qualifies = True
+                    break
+            
+            # If country qualifies, create leaderboards for all game modes
+            if country_qualifies:
+                country_has_leaderboards = False
+                for game_type in SUPPORTED_GAME_TYPES:
                     country_lb = self._calculate_country_leaderboard_optimized(country_data, country, game_type)
                     if not country_lb.empty:
                         leaderboards.append(country_lb)
                         country_has_leaderboards = True
-            
-            if country_has_leaderboards:
-                country_leaderboard_count += 1
+                
+                if country_has_leaderboards:
+                    country_leaderboard_count += 1
         
         self.logger.info(f"Generated country leaderboards for {country_leaderboard_count} countries")
         
@@ -326,7 +332,7 @@ class LeaderboardCalculator:
         
         latest_ratings = latest_ratings[latest_ratings['user_id'].isin(qualified_players)]
         
-        if len(latest_ratings) < 15:  # Need at least 15 qualified players for a country leaderboard
+        if latest_ratings.empty:
             return pd.DataFrame()
         
         # Prepare leaderboard data
