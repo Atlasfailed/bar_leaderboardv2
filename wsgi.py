@@ -14,7 +14,7 @@ if path not in sys.path:
 # Set environment variables
 os.environ['FLASK_ENV'] = 'production'
 
-from .app import app as application
+from .static.app import app as application
 
 if __name__ == "__main__":
     application.run()
