@@ -50,6 +50,11 @@ SUPPORTED_GAME_TYPES = [
     'Large Team', 'Small Team', 'Duel'
 ]
 
+# Include legacy Team games for broader data collection
+ALL_GAME_TYPES_FOR_DATA = [
+    'Large Team', 'Small Team', 'Duel', 'Team'  # Include legacy Team type
+]
+
 # Minimum games required for inclusion in leaderboards
 MIN_GAMES_THRESHOLD = config.analysis.min_player_games_threshold
 
@@ -130,7 +135,7 @@ class LeaderboardCalculator:
             if country_qualifies:
                 country_has_leaderboards = False
                 for game_type in SUPPORTED_GAME_TYPES:
-                    country_lb = self._calculate_country_leaderboard_optimized(country_data, country, game_type)
+                    country_lb = self._calculate_country_leaderboard_optimized(data, country, game_type)
                     if not country_lb.empty:
                         leaderboards.append(country_lb)
                         country_has_leaderboards = True
@@ -157,7 +162,7 @@ class LeaderboardCalculator:
                 region_data = data[data['sub_region'] == region]
                 
                 for game_type in SUPPORTED_GAME_TYPES:
-                    region_lb = self._calculate_regional_leaderboard(region_data, region, game_type)
+                    region_lb = self._calculate_regional_leaderboard(data, region, game_type)
                     if not region_lb.empty:
                         leaderboards.append(region_lb)
         
@@ -213,9 +218,9 @@ class LeaderboardCalculator:
         # Debug: Log available columns
         self.logger.info(f"Available columns after merge: {list(data.columns)}")
         
-        # Filter for ranked matches
+        # Filter for ranked matches - include legacy Team games for broader data collection
         self.logger.info("Filtering for ranked matches...")
-        data = filter_ranked_matches(data, SUPPORTED_GAME_TYPES)
+        data = filter_ranked_matches(data, ALL_GAME_TYPES_FOR_DATA)
         
         self.logger.info(f"Prepared {len(data):,} match records for analysis")
         return data
@@ -234,8 +239,8 @@ class LeaderboardCalculator:
                          .tail(1)
                          .copy())
         
-        # Filter players with minimum games
-        player_game_counts = game_data['user_id'].value_counts()
+        # Filter players with minimum games (including legacy Team games for team modes)
+        player_game_counts = self._get_team_game_counts_with_legacy(data, game_type)
         qualified_players = player_game_counts[player_game_counts >= self.min_games_threshold].index
         
         latest_ratings = latest_ratings[latest_ratings['user_id'].isin(qualified_players)]
@@ -279,8 +284,8 @@ class LeaderboardCalculator:
                          .tail(1)
                          .copy())
         
-        # Filter players with minimum games
-        player_game_counts = country_data['user_id'].value_counts()
+        # Filter players with minimum games (including legacy Team games for team modes)
+        player_game_counts = self._get_team_game_counts_with_legacy(data, game_type, country)
         qualified_players = player_game_counts[player_game_counts >= self.min_games_threshold].index
         
         latest_ratings = latest_ratings[latest_ratings['user_id'].isin(qualified_players)]
@@ -307,8 +312,9 @@ class LeaderboardCalculator:
         
         return leaderboard
     
-    def _calculate_country_leaderboard_optimized(self, country_data: pd.DataFrame, country: str, game_type: str) -> pd.DataFrame:
-        """Calculate country-specific leaderboard for a game type (optimized version with pre-filtered data)."""
+    def _calculate_country_leaderboard_optimized(self, data: pd.DataFrame, country: str, game_type: str) -> pd.DataFrame:
+        """Calculate country-specific leaderboard for a game type (optimized version)."""
+        country_data = data[data['country'] == country]
         game_data = country_data[country_data['game_type'] == game_type].copy()
         
         if game_data.empty:
@@ -326,8 +332,8 @@ class LeaderboardCalculator:
                          .tail(1)
                          .copy())
         
-        # Filter players with minimum games
-        player_game_counts = game_data['user_id'].value_counts()
+        # Filter players with minimum games (including legacy Team games for team modes)
+        player_game_counts = self._get_team_game_counts_with_legacy(data, game_type, country)
         qualified_players = player_game_counts[player_game_counts >= self.min_games_threshold].index
         
         latest_ratings = latest_ratings[latest_ratings['user_id'].isin(qualified_players)]
@@ -354,8 +360,9 @@ class LeaderboardCalculator:
         
         return leaderboard
 
-    def _calculate_regional_leaderboard(self, region_data: pd.DataFrame, region: str, game_type: str) -> pd.DataFrame:
+    def _calculate_regional_leaderboard(self, data: pd.DataFrame, region: str, game_type: str) -> pd.DataFrame:
         """Calculate regional leaderboard for a game type based on sub-region."""
+        region_data = data[data['sub_region'] == region]
         game_data = region_data[region_data['game_type'] == game_type].copy()
         
         if game_data.empty:
@@ -373,8 +380,8 @@ class LeaderboardCalculator:
                          .tail(1)
                          .copy())
         
-        # Filter players with minimum games
-        player_game_counts = game_data['user_id'].value_counts()
+        # Filter players with minimum games (including legacy Team games for team modes)
+        player_game_counts = self._get_team_game_counts_with_legacy(data, game_type, region=region)
         qualified_players = player_game_counts[player_game_counts >= self.min_games_threshold].index
         
         latest_ratings = latest_ratings[latest_ratings['user_id'].isin(qualified_players)]
@@ -402,6 +409,32 @@ class LeaderboardCalculator:
         
         return leaderboard
 
+    def _get_team_game_counts_with_legacy(self, data: pd.DataFrame, game_type: str, country: str = None, region: str = None) -> pd.Series:
+        """
+        Get player game counts for team modes, including legacy 'Team' games.
+        For 'Large Team' and 'Small Team', also count legacy 'Team' games.
+        
+        Args:
+            data: The full dataset
+            game_type: The target game type
+            country: Optional country filter for country-specific leaderboards
+            region: Optional region filter for regional leaderboards
+        """
+        # Apply filters if specified
+        if country:
+            data = data[data['country'] == country]
+        if region:
+            data = data[data['sub_region'] == region]
+            
+        if game_type in ['Large Team', 'Small Team']:
+            # Count both the specific team type and legacy 'Team' games
+            relevant_games = data[data['game_type'].isin([game_type, 'Team'])]
+        else:
+            # For other game types (like 'Duel'), only count that specific type
+            relevant_games = data[data['game_type'] == game_type]
+        
+        return relevant_games['user_id'].value_counts()
+    
     def save_leaderboard(self, leaderboard_df: pd.DataFrame) -> None:
         """Save the final leaderboard to file."""
         if leaderboard_df.empty:

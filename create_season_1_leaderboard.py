@@ -25,6 +25,9 @@ logger = setup_logging('Season1Leaderboard')
 
 # Constants
 SUPPORTED_GAME_TYPES = ['Large Team', 'Small Team', 'Duel']
+
+# Include legacy Team games for broader data collection
+ALL_GAME_TYPES_FOR_DATA = ['Large Team', 'Small Team', 'Duel', 'Team']
 MIN_GAMES_THRESHOLD = config.analysis.min_player_games_threshold  # Use config value for player leaderboards
 
 def create_season_1_leaderboard():
@@ -51,9 +54,9 @@ def create_season_1_leaderboard():
     
     logger.info(f"Season 1 records: {len(season_1_data):,} (filtered from {len(data):,})")
     
-    # Filter for ranked matches in supported game types
+    # Filter for ranked matches in supported game types (including legacy Team)
     logger.info("Filtering for ranked matches...")
-    season_1_data = filter_ranked_matches(season_1_data, SUPPORTED_GAME_TYPES)
+    season_1_data = filter_ranked_matches(season_1_data, ALL_GAME_TYPES_FOR_DATA)
     
     logger.info(f"Season 1 ranked records: {len(season_1_data):,}")
     
@@ -195,8 +198,8 @@ def calculate_global_leaderboard(data: pd.DataFrame, game_type: str) -> pd.DataF
                      .tail(1)
                      .copy())
     
-    # Filter players with minimum games
-    player_game_counts = game_data['user_id'].value_counts()
+    # Filter players with minimum games (including legacy Team games for team modes)
+    player_game_counts = get_team_game_counts_with_legacy(data, game_type)
     qualified_players = player_game_counts[player_game_counts >= MIN_GAMES_THRESHOLD].index
     
     latest_ratings = latest_ratings[latest_ratings['user_id'].isin(qualified_players)]
@@ -237,8 +240,8 @@ def calculate_country_leaderboard(data: pd.DataFrame, country: str, game_type: s
                      .tail(1)
                      .copy())
     
-    # Filter players with minimum games
-    player_game_counts = country_game_data['user_id'].value_counts()
+    # Filter players with minimum games (including legacy Team games for team modes)
+    player_game_counts = get_team_game_counts_with_legacy(data, game_type, country)
     qualified_players = player_game_counts[player_game_counts >= MIN_GAMES_THRESHOLD].index
     
     latest_ratings = latest_ratings[latest_ratings['user_id'].isin(qualified_players)]
@@ -279,8 +282,8 @@ def calculate_regional_leaderboard(data: pd.DataFrame, region: str, game_type: s
                      .tail(1)
                      .copy())
     
-    # Filter players with minimum games
-    player_game_counts = regional_game_data['user_id'].value_counts()
+    # Filter players with minimum games (including legacy Team games for team modes)
+    player_game_counts = get_team_game_counts_with_legacy(data, game_type, region=region)
     qualified_players = player_game_counts[player_game_counts >= MIN_GAMES_THRESHOLD].index
     
     latest_ratings = latest_ratings[latest_ratings['user_id'].isin(qualified_players)]
@@ -317,6 +320,32 @@ def add_ranks_to_leaderboard(leaderboard: pd.DataFrame) -> pd.DataFrame:
                           .rank(method='min', ascending=False))
     
     return leaderboard
+
+def get_team_game_counts_with_legacy(data: pd.DataFrame, game_type: str, country: str = None, region: str = None) -> pd.Series:
+    """
+    Get player game counts for team modes, including legacy 'Team' games.
+    For 'Large Team' and 'Small Team', also count legacy 'Team' games.
+    
+    Args:
+        data: The full dataset
+        game_type: The target game type
+        country: Optional country filter for country-specific leaderboards
+        region: Optional region filter for regional leaderboards
+    """
+    # Apply filters if specified
+    if country:
+        data = data[data['country'] == country]
+    if region:
+        data = data[data['sub_region'] == region]
+        
+    if game_type in ['Large Team', 'Small Team']:
+        # Count both the specific team type and legacy 'Team' games
+        relevant_games = data[data['game_type'].isin([game_type, 'Team'])]
+    else:
+        # For other game types (like 'Duel'), only count that specific type
+        relevant_games = data[data['game_type'] == game_type]
+    
+    return relevant_games['user_id'].value_counts()
 
 if __name__ == "__main__":
     try:

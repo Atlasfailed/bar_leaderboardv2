@@ -43,7 +43,7 @@ class DataMartConfig:
 class AnalysisConfig:
     """Configuration for various analysis parameters."""
     # Player leaderboard parameters
-    min_player_games_threshold: int = 25  # Minimum games for player leaderboards
+    min_player_games_threshold: int = 20  # Minimum games for player leaderboards
     
     # Nation ranking parameters
     min_games_threshold: int = 50  # Minimum games for nation rankings
