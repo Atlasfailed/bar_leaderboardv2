@@ -670,9 +670,14 @@ class HybridDataProcessor:
             self.matches_df.to_parquet(self.data_dir / "enhanced_matches.parquet", index=False)
             self.match_players_df.to_parquet(self.data_dir / "enhanced_match_players.parquet", index=False)
             
-            # Save all ranking data
+            # Save all ranking data (original enhanced format)
             leaderboard.to_parquet(self.data_dir / "enhanced_leaderboard.parquet", index=False)
             leaderboard.to_csv(self.data_dir / "enhanced_leaderboard.csv", index=False)
+            
+            # Create and save Flask-compatible leaderboard
+            compatible_leaderboard = self.create_compatible_leaderboard()
+            compatible_leaderboard.to_parquet(self.data_dir / "enhanced_final_leaderboard.parquet", index=False)
+            self.logger.info("Saved Flask-compatible enhanced leaderboard")
             
             nation_rankings.to_parquet(self.data_dir / "enhanced_nation_rankings.parquet", index=False)
             nation_rankings.to_csv(self.data_dir / "enhanced_nation_rankings.csv", index=False)
@@ -731,6 +736,72 @@ class HybridDataProcessor:
         }
         
         return results
+
+    def create_compatible_leaderboard(self) -> pd.DataFrame:
+        """Create a leaderboard compatible with the existing Flask app structure."""
+        self.logger.info("Creating Flask-compatible enhanced leaderboard...")
+        
+        # Get the enhanced leaderboard
+        enhanced_leaderboard = self.create_enhanced_leaderboard()
+        
+        # Load original leaderboard to understand the structure
+        try:
+            original_leaderboard = pd.read_parquet(self.data_dir / "final_leaderboard.parquet")
+            self.logger.info(f"Original leaderboard structure: {original_leaderboard.columns.tolist()}")
+        except Exception as e:
+            self.logger.warning(f"Could not load original leaderboard for structure reference: {e}")
+            return enhanced_leaderboard
+        
+        # Create compatible records for each game type and leaderboard combination
+        compatible_records = []
+        
+        # Define game types and leaderboard types from original data
+        game_types = ['Large Team', 'Small Team', 'Duel'] if len(original_leaderboard) > 0 else ['Large Team']
+        leaderboard_types = ['global'] if len(original_leaderboard) > 0 else ['global']
+        
+        if len(original_leaderboard) > 0:
+            game_types = original_leaderboard['game_type'].unique()
+            leaderboard_types = original_leaderboard['leaderboard_id'].unique()
+        
+        # For each player in enhanced data, create records for each game type/leaderboard combo
+        for _, player in enhanced_leaderboard.iterrows():
+            for game_type in game_types:
+                for leaderboard_id in leaderboard_types:
+                    # Calculate leaderboard rating based on wins and win rate
+                    # Higher rating for more wins and better win rate
+                    base_rating = player['wins'] * 10
+                    win_rate_bonus = player['win_rate'] * 1000
+                    leaderboard_rating = base_rating + win_rate_bonus
+                    
+                    compatible_record = {
+                        'user_id': player['user_id'],
+                        'name': player['name'],
+                        'countryCode': player['country'] if pd.notna(player['country']) else '',
+                        'new_skill': 1500 + (player['wins'] * 0.5),  # Estimate skill based on wins
+                        'new_uncertainty': max(10, 100 - (player['total_games'] * 0.1)),  # Lower uncertainty for more games
+                        'start_time': player['last_game'] if pd.notna(player['last_game']) else pd.Timestamp.now(),
+                        'leaderboard_rating': leaderboard_rating,
+                        'leaderboard_id': leaderboard_id,
+                        'game_type': game_type,
+                        'rank': player['rank']
+                    }
+                    compatible_records.append(compatible_record)
+        
+        if not compatible_records:
+            self.logger.warning("No compatible records created, returning enhanced leaderboard as-is")
+            return enhanced_leaderboard
+        
+        compatible_df = pd.DataFrame(compatible_records)
+        
+        # Sort by leaderboard rating within each game type and leaderboard
+        compatible_df = compatible_df.sort_values(['game_type', 'leaderboard_id', 'leaderboard_rating'], 
+                                                 ascending=[True, True, False])
+        
+        # Recalculate ranks within each group
+        compatible_df['rank'] = compatible_df.groupby(['game_type', 'leaderboard_id']).cumcount() + 1
+        
+        self.logger.info(f"Created {len(compatible_df)} compatible leaderboard records")
+        return compatible_df
 
 def main():
     """Main execution function."""

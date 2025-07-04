@@ -35,6 +35,7 @@ def main():
     # Define pipelines to run in order
     pipelines = [
         "run_pipelinev2.py",
+        "run_hybrid_processing.py",  # Add hybrid processing after main pipeline
         "run_nation_rankings.py", 
         "run_team_analysis.py"
     ]

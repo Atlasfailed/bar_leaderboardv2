@@ -75,19 +75,27 @@ class DataManager:
         return fallback.replace(hour=10, minute=0, second=0, microsecond=0)
     
     def load_leaderboard_data(self) -> bool:
-        """Load and preprocess leaderboard data."""
-        if not os.path.exists(config.paths.final_leaderboard_parquet):
-            print(f"ERROR: Leaderboard file not found at: {config.paths.final_leaderboard_parquet}")
+        """Load and preprocess leaderboard data, preferring enhanced data if available."""
+        # Try Flask-compatible enhanced leaderboard first, then fallback to regular
+        enhanced_leaderboard_path = config.paths.data_dir / "enhanced_final_leaderboard.parquet"
+        leaderboard_path = enhanced_leaderboard_path if enhanced_leaderboard_path.exists() else config.paths.final_leaderboard_parquet
+        
+        if not os.path.exists(leaderboard_path):
+            print(f"ERROR: Leaderboard file not found at: {leaderboard_path}")
             return False
         
         try:
-            self.leaderboard_df = pd.read_parquet(config.paths.final_leaderboard_parquet)
+            self.leaderboard_df = pd.read_parquet(leaderboard_path)
+            
+            # Check if we're using enhanced data
+            is_enhanced = leaderboard_path == enhanced_leaderboard_path
+            data_source = "Enhanced Hybrid Data" if is_enhanced else "Standard Datamart"
             
             # Calculate last updated time
             last_datamart_update = self.get_last_datamart_update()
             self.last_updated_time = last_datamart_update.strftime('%B %d, %Y at %H:%M UTC')
             
-            print(f"Loaded {len(self.leaderboard_df)} player leaderboard records.")
+            print(f"Loaded {len(self.leaderboard_df)} player leaderboard records from {data_source}.")
             print(f"Data represents datamart update from: {self.last_updated_time}")
             
             # Pre-process for faster API responses
@@ -119,27 +127,50 @@ class DataManager:
             return False
     
     def load_nation_rankings(self) -> bool:
-        """Load nation rankings data."""
-        if not os.path.exists(config.paths.nation_rankings_parquet):
-            print(f"INFO: Nation ranking file not found at: {config.paths.nation_rankings_parquet}")
+        """Load nation rankings data, preferring enhanced data if available."""
+        # Try enhanced nation rankings first, then fallback to regular
+        enhanced_nation_path = config.paths.data_dir / "enhanced_nation_rankings.parquet"
+        nation_path = enhanced_nation_path if enhanced_nation_path.exists() else config.paths.nation_rankings_parquet
+        
+        if not os.path.exists(nation_path):
+            print(f"INFO: Nation ranking file not found at: {nation_path}")
             return False
         
         try:
-            self.nation_rankings_df = pd.read_parquet(config.paths.nation_rankings_parquet)
-            print(f"Loaded {len(self.nation_rankings_df)} nation ranking records.")
+            self.nation_rankings_df = pd.read_parquet(nation_path)
+            
+            # Check if we're using enhanced data
+            is_enhanced = nation_path == enhanced_nation_path
+            data_source = "Enhanced Hybrid Data" if is_enhanced else "Standard Datamart"
+            
+            print(f"Loaded {len(self.nation_rankings_df)} nation ranking records from {data_source}.")
             return True
         except Exception as e:
             print(f"ERROR loading nation ranking data: {e}")
             return False
     
     def load_player_contributions(self) -> bool:
-        """Load player contributions data."""
-        if not os.path.exists(config.paths.player_contributions_parquet):
-            print(f"INFO: Player contributions file not found at: {config.paths.player_contributions_parquet}")
+        """Load player contributions data, preferring enhanced data if available."""
+        # Try enhanced player contributions first, then fallback to regular
+        enhanced_contributions_path = config.paths.data_dir / "enhanced_player_contributions.parquet"
+        contributions_path = enhanced_contributions_path if enhanced_contributions_path.exists() else config.paths.player_contributions_parquet
+        
+        if not os.path.exists(contributions_path):
+            print(f"INFO: Player contributions file not found at: {contributions_path}")
             return False
         
         try:
-            self.player_contributions_df = pd.read_parquet(config.paths.player_contributions_parquet)
+            self.player_contributions_df = pd.read_parquet(contributions_path)
+            
+            # Check if we're using enhanced data
+            is_enhanced = contributions_path == enhanced_contributions_path
+            data_source = "Enhanced Hybrid Data" if is_enhanced else "Standard Datamart"
+            
+            print(f"Loaded {len(self.player_contributions_df)} player contribution records from {data_source}.")
+            return True
+        except Exception as e:
+            print(f"ERROR loading player contributions data: {e}")
+            return False
             print(f"Loaded {len(self.player_contributions_df)} player contribution records.")
             return True
         except Exception as e:
@@ -297,6 +328,25 @@ class DataManager:
         return {
             "players": players,
             "total_players": len(players)
+        }
+    
+    def get_data_source_info(self) -> Dict[str, Any]:
+        """Get information about the data sources being used."""
+        enhanced_leaderboard_path = config.paths.data_dir / "enhanced_final_leaderboard.parquet"
+        enhanced_nation_path = config.paths.data_dir / "enhanced_nation_rankings.parquet"
+        enhanced_contributions_path = config.paths.data_dir / "enhanced_player_contributions.parquet"
+        
+        return {
+            'leaderboard_source': 'Enhanced Hybrid Data' if enhanced_leaderboard_path.exists() else 'Standard Datamart',
+            'nation_rankings_source': 'Enhanced Hybrid Data' if enhanced_nation_path.exists() else 'Standard Datamart',
+            'player_contributions_source': 'Enhanced Hybrid Data' if enhanced_contributions_path.exists() else 'Standard Datamart',
+            'enhanced_data_available': any([
+                enhanced_leaderboard_path.exists(),
+                enhanced_nation_path.exists(),
+                enhanced_contributions_path.exists()
+            ]),
+            'last_updated': self.last_updated_time,
+            'hybrid_processing_enabled': enhanced_leaderboard_path.exists()
         }
 
 # Global data manager instance
@@ -559,10 +609,14 @@ def get_nation_score_breakdown(country_code, game_type):
 @app.route('/api/status')
 def get_status():
     """Provides status information for the leaderboard."""
+    data_source_info = data_manager.get_data_source_info()
+    
     return jsonify({
         "status": "online",
         "last_updated": data_manager.last_updated_time,
-        "message": "BAR Leaderboard is operational"
+        "message": "BAR Leaderboard is operational",
+        "data_sources": data_source_info,
+        "enhanced_data_enabled": data_source_info['enhanced_data_available']
     })
 
 @app.route('/api/leaderboards')
