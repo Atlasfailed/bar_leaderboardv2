@@ -28,10 +28,6 @@ dependencies = [
     "pytz>=2025.2",
 ]
 
-[project.urls]
-"Homepage" = "https://github.com/yourusername/nation_leaderboard"  # Replace with your actual URL
-"Bug Tracker" = "https://github.com/yourusername/nation_leaderboard/issues" # Replace with your actual URL
-
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

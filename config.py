@@ -34,11 +34,14 @@ class NetworkConfig:
 @dataclass
 class DataMartConfig:
     """Configuration for BAR data mart URLs and caching."""
+    #matches_url: str = '/Users/gerthuybrechts/pyprojects/bar-july-5/bar_leaderboardv2/data/matches.parquet'
+    #match_players_url: str = '/Users/gerthuybrechts/pyprojects/bar-july-5/bar_leaderboardv2/data/match_players.parquet'
+    #players_url: str = '/Users/gerthuybrechts/pyprojects/bar-july-5/bar_leaderboardv2/data/players.parquet'
+    cache_duration_hours: int = 24
+
     matches_url: str = 'https://data-marts.beyondallreason.dev/matches.parquet'
     match_players_url: str = 'https://data-marts.beyondallreason.dev/match_players.parquet'
     players_url: str = 'https://data-marts.beyondallreason.dev/players.parquet'
-    cache_duration_hours: int = 24
-
 @dataclass
 class AnalysisConfig:
     """Configuration for various analysis parameters."""
