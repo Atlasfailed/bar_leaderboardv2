@@ -98,48 +98,48 @@ def main():
     # Create remote data directory
     uploader.create_directory(remote_data_dir)
     
-    # Files to upload (adjust paths as needed for your PythonAnywhere setup)
-    # Note: Excluding large external data files that exceed PythonAnywhere API limits
-    files_to_upload = [
-        # Core leaderboard files (essential for web app)
-        ("final_leaderboard.parquet", f"{remote_data_dir}/final_leaderboard.parquet"),
-        ("nation_rankings.parquet", f"{remote_data_dir}/nation_rankings.parquet"),
-        ("player_contributions.parquet", f"{remote_data_dir}/player_contributions.parquet"),
+    # ONLY upload generated/processed files and static reference files
+    # DO NOT upload external datamart files (matches.parquet, match_players.parquet, players.parquet)
+    essential_files = [
+        # Generated leaderboard files (core output)
+        "final_leaderboard.parquet",
+        "nation_rankings.parquet", 
+        "player_contributions.parquet",
+        "team_rosters.parquet",
         
-        # Team analysis results
-        ("team_rosters.parquet", f"{remote_data_dir}/team_rosters.parquet"),
+        # Static reference files (small, essential)
+        "iso_country.csv",
+        "efficiency_vs_speed_analysis_with_names.csv",
         
-        # Static reference files
-        ("iso_country.csv", f"{remote_data_dir}/iso_country.csv"),
-        ("efficiency_vs_speed_analysis_with_names.csv", f"{remote_data_dir}/efficiency_vs_speed_analysis_with_names.csv"),
-        
-        # Season 1 specific files (if they exist)
-        ("season_1_final_leaderboard.parquet", f"{remote_data_dir}/season_1_final_leaderboard.parquet"),
-        ("season_1_nation_rankings.parquet", f"{remote_data_dir}/season_1_nation_rankings.parquet"),
-        ("season_1_player_contributions.parquet", f"{remote_data_dir}/season_1_player_contributions.parquet"),
+        # Season 1 files (if they exist)
+        "season_1_final_leaderboard.parquet",
+        "season_1_nation_rankings.parquet", 
+        "season_1_player_contributions.parquet",
         
         # Analysis results
-        ("roster_analysis_results.json", f"{remote_data_dir}/roster_analysis_results.json"),
+        "roster_analysis_results.json",
     ]
     
-    # Note: The following large files are excluded due to PythonAnywhere API size limits:
-    # - matches.parquet (~46MB) - external data, can be re-downloaded
-    # - match_players.parquet (~220MB) - external data, too large for API
-    # - players.parquet (~2.4MB) - external data, can be re-downloaded
+    logger.info("🔍 IMPORTANT: This script excludes external datamart files:")
+    logger.info("   ❌ matches.parquet (external data - can be re-downloaded)")
+    logger.info("   ❌ match_players.parquet (external data - too large)")
+    logger.info("   ❌ players.parquet (external data - can be re-downloaded)")
+    logger.info(f"📋 Will attempt to upload {len(essential_files)} essential files only")
     
-    # Upload files
+    # Upload only the essential files
     success_count = 0
     total_files = 0
     
-    for local_filename, remote_path in files_to_upload:
-        local_path = data_dir / local_filename
+    for filename in essential_files:
+        local_path = data_dir / filename
+        remote_path = f"{remote_data_dir}/{filename}"
         
         if local_path.exists():
             total_files += 1
             if uploader.upload_file(local_path, remote_path):
                 success_count += 1
         else:
-            logger.warning(f"⚠️  File not found: {local_path}")
+            logger.warning(f"⚠️  Optional file not found: {filename}")
     
     # Upload latest performance report if exists
     performance_reports = list(data_dir.glob("performance_report_*.json"))
