@@ -19,6 +19,16 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       
+    - name: Debug - Check repository structure
+      run: |
+        echo "Repository structure:"
+        ls -la
+        echo "Data directory:"
+        ls -la data/ || echo "Data directory not found"
+        echo "Checking for specific files:"
+        ls -la data/iso_country.csv || echo "iso_country.csv not found"
+        ls -la data/efficiency_vs_speed_analysis_with_names.csv || echo "efficiency file not found"
+      
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
