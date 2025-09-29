@@ -1,4 +1,8 @@
-name: Automated BAR Leaderboard Pipeline
+name: BAR Leaderboard Pipeline (Optimized)
+
+# Optimized pipeline that avoids large file uploads to work within PythonAnywhere limits
+# Runs on Tuesdays and Saturdays at 5 PM CET
+# Only uploads essential files for the web application
 
 on:
   schedule:
