@@ -58,6 +58,24 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Data directory - exclude all by default
 data/
-# Exception: Keep essential reference files
+
+# Exception: Keep essential static reference files
 !data/iso_country.csv
+!data/efficiency_vs_speed_analysis_with_names.csv
+
+# Note: External data files (downloaded by scripts):
+# - data/match_players.parquet
+# - data/matches.parquet  
+# - data/players.parquet
+#
+# Generated files (created by pipeline scripts):
+# - data/final_leaderboard.parquet
+# - data/nation_rankings.parquet
+# - data/player_contributions.parquet
+# - data/team_rosters.parquet
+# - data/season_1_*.parquet
+# - data/performance_report_*.json
+# - data/roster_analysis_results.json
