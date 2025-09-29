@@ -71,6 +71,10 @@ jobs:
           data/*.json
         retention-days: 30
         
+    - name: Diagnostic - Check what files should be uploaded
+      run: |
+        python diagnostic_upload.py
+        
     - name: Upload to PythonAnywhere
       env:
         PYTHONANYWHERE_USERNAME: ${{ secrets.PYTHONANYWHERE_USERNAME }}
