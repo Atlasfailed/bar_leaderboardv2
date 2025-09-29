@@ -22,8 +22,7 @@ class PythonAnywhereUploader:
         self.api_token = api_token
         self.base_url = f"https://www.pythonanywhere.com/api/v0/user/{username}/files"
         self.headers = {
-            'Authorization': f'Token {api_token}',
-            'Content-Type': 'application/json'
+            'Authorization': f'Token {api_token}'
         }
     
     def upload_file(self, local_path, remote_path):
@@ -33,17 +32,17 @@ class PythonAnywhereUploader:
             with open(local_path, 'rb') as f:
                 content = f.read()
             
-            # Encode content as base64 for API
-            encoded_content = base64.b64encode(content).decode('utf-8')
-            
             # Prepare the API request
             url = f"{self.base_url}/path{remote_path}"
-            data = {
-                'content': encoded_content
+            headers = {
+                'Authorization': f'Token {self.api_token}'
             }
             
+            # Use files parameter for file upload
+            files = {'content': (os.path.basename(local_path), content)}
+            
             logger.info(f"Uploading {local_path} to {remote_path}...")
-            response = requests.post(url, headers=self.headers, json=data)
+            response = requests.post(url, headers=headers, files=files)
             
             if response.status_code == 201:
                 logger.info(f"✅ Successfully uploaded {local_path}")
