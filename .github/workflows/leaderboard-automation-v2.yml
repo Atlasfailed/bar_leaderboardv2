@@ -1,0 +1,95 @@
+name: BAR Leaderboard Automation v2
+
+on:
+  schedule:
+    # Run on Tuesdays at 5 PM CET (15:00 UTC during winter, 16:00 UTC during summer)
+    # Using 15:00 UTC as baseline - adjust if needed for DST
+    - cron: '0 15 * * 2'  # Tuesday at 15:00 UTC
+    - cron: '0 15 * * 6'  # Saturday at 15:00 UTC
+  workflow_dispatch: # Allow manual triggering for testing
+
+env:
+  PYTHON_VERSION: '3.11'
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Debug - Check repository structure
+      run: |
+        echo "Repository structure:"
+        ls -la
+        echo "Data directory:"
+        ls -la data/ || echo "Data directory not found"
+        echo "Checking for specific files:"
+        ls -la data/iso_country.csv || echo "iso_country.csv not found"
+        ls -la data/efficiency_vs_speed_analysis_with_names.csv || echo "efficiency file not found"
+        echo "Workflow commit: ${{ github.sha }}"
+        echo "Upload script exists:"
+        ls -la .github/scripts/upload_essential_files.py || echo "upload_essential_files.py not found"
+      
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ env.PYTHON_VERSION }}
+        
+    - name: Cache pip dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+          
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Run all pipelines
+      run: |
+        cd ${{ github.workspace }}
+        python run_all_pipelines.py
+        
+    - name: List generated files
+      run: |
+        echo "Generated data files:"
+        ls -la data/
+        
+    - name: Upload generated data as artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: pipeline-data-${{ github.run_number }}
+        path: |
+          data/*.parquet
+          data/*.csv
+          data/*.json
+        retention-days: 30
+        
+    - name: Upload to PythonAnywhere (FIXED)
+      env:
+        PYTHONANYWHERE_USERNAME: ${{ secrets.PYTHONANYWHERE_USERNAME }}
+        PYTHONANYWHERE_API_TOKEN: ${{ secrets.PYTHONANYWHERE_API_TOKEN }}
+      run: |
+        echo "Using FIXED upload script that uploads to /home/roark2120/data"
+        echo "This script excludes large external files (matches.parquet, match_players.parquet, players.parquet)"
+        python .github/scripts/upload_essential_files.py
+        
+  notify-completion:
+    runs-on: ubuntu-latest
+    needs: run-pipeline
+    if: always()
+    
+    steps:
+    - name: Notify completion
+      run: |
+        if [ "${{ needs.run-pipeline.result }}" == "success" ]; then
+          echo "✅ Pipeline completed successfully and files uploaded to PythonAnywhere"
+        else
+          echo "❌ Pipeline failed. Check the logs for details."
+          exit 1
+        fi
