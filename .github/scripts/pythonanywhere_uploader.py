@@ -93,7 +93,7 @@ def main():
     
     # Define files to upload and their remote destinations
     data_dir = Path("data")
-    remote_data_dir = "/home/{}/mysite/data".format(username)
+    remote_data_dir = "/home/roark2120/data"
     
     # Create remote data directory
     uploader.create_directory(remote_data_dir)
